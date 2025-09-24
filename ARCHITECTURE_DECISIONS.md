@@ -1,7 +1,7 @@
 # Multi-Site Event Aggregation Architecture Decisions
 
 ## Overview
-This document captures the architectural decisions for transforming "Ground Events" from a single brewery food truck tracker into a multi-site event aggregation platform.
+This document captures the architectural decisions for transforming "Around the Grounds" from a single brewery food truck tracker into a multi-site event aggregation platform.
 
 ## Current State Analysis (Completed)
 
@@ -144,18 +144,18 @@ class SiteConfig:  # New model for site configuration
 #### Site-Specific Commands
 ```bash
 # Run specific site configurations
-uv run ground-events --site ballard-food-trucks --deploy
-uv run ground-events --site seattle-concerts --preview
-uv run ground-events --site capitol-hill-kids --verbose
+uv run around-the-grounds --site ballard-food-trucks --deploy
+uv run around-the-grounds --site seattle-concerts --preview
+uv run around-the-grounds --site capitol-hill-kids --verbose
 
 # Run all sites (deploys to multiple repositories)
-uv run ground-events --all-sites --deploy
+uv run around-the-grounds --all-sites --deploy
 
 # List available sites
-uv run ground-events --list-sites
+uv run around-the-grounds --list-sites
 
 # Backwards compatibility (uses ballard-food-trucks.yaml by default)
-uv run ground-events --deploy  # Still works
+uv run around-the-grounds --deploy  # Still works
 ```
 
 #### CLI Features
@@ -276,7 +276,7 @@ auto_detection_order = [
 **Usage Example**:
 ```bash
 # Try auto-detection for a new site
-uv run ground-events --auto-detect "https://newsite.com/events"
+uv run around-the-grounds --auto-detect "https://newsite.com/events"
 
 # Output suggests parser and generates config:
 # ✅ Detected: WordPress Events plugin

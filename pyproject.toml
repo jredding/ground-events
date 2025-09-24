@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ground-events"
+name = "around-the-grounds"
 version = "0.1.0"
-description = "Multi-site event aggregation system for tracking events from various sources"
+description = "A tool for tracking food truck schedules and locations"
 authors = [
     {name = "Steve Androulakis", email = "steve@example.com"},
 ]
@@ -52,11 +52,11 @@ dev = [
 ]
 
 [project.scripts]
-ground-events = "around_the_grounds.main:main"
+around-the-grounds = "around_the_grounds.main:main"
 
 [project.urls]
-Homepage = "https://github.com/steveandroulakis/ground-events"
-Repository = "https://github.com/steveandroulakis/ground-events"
+Homepage = "https://github.com/steveandroulakis/around-the-grounds"
+Repository = "https://github.com/steveandroulakis/around-the-grounds"
 
 [tool.black]
 line-length = 88

@@ -1,4 +1,4 @@
-"""Main entry point for ground-events CLI."""
+"""Main entry point for around-the-grounds CLI."""
 
 import argparse
 import asyncio
@@ -321,7 +321,7 @@ def _deploy_with_github_auth(web_data: dict, repository_url: str) -> bool:
                 capture_output=True,
             )
             subprocess.run(
-                ["git", "config", "user.name", "Ground Events Bot"],
+                ["git", "config", "user.name", "Around the Grounds Bot"],
                 cwd=repo_dir,
                 check=True,
                 capture_output=True,
@@ -539,7 +539,7 @@ def _deploy_with_site_template(web_data: dict, repository_url: str, site_config:
                 capture_output=True,
             )
             subprocess.run(
-                ["git", "config", "user.name", "Ground Events Bot"],
+                ["git", "config", "user.name", "Around the Grounds Bot"],
                 cwd=repo_dir,
                 check=True,
                 capture_output=True,
@@ -691,7 +691,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
-    print("🌐 Ground Events - Multi-Site Event Aggregation")
+    print("🌐 Around the Grounds - Multi-Site Event Aggregation")
     print("=" * 55)
 
     try:

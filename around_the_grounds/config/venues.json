@@ -1,0 +1,23 @@
+{
+  "venues": [
+    {
+      "key": "littlefield-nyc",
+      "name": "Littlefield",
+      "url": "https://littlefieldnyc.com/all-shows",
+      "parser_config": {
+        "note": "HTML scraping with JSON-LD schema support",
+        "selectors": {
+          "event_container": ".event-listing",
+          "title": ".event-title",
+          "date": ".event-date",
+          "time": ".event-time",
+          "description": ".event-description",
+          "age_limit": ".min-age",
+          "ticket_link": ".ticket-link"
+        },
+        "json_ld_schema": true,
+        "eventbrite_integration": true
+      }
+    }
+  ]
+}

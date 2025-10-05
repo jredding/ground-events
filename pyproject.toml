@@ -52,6 +52,7 @@ dev = [
 
 [project.scripts]
 around-the-grounds = "around_the_grounds.main:main"
+littlefield-events = "around_the_grounds.events_main:main"
 
 [project.urls]
 Homepage = "https://github.com/steveandroulakis/around-the-grounds"

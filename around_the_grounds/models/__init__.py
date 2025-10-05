@@ -1,4 +1,4 @@
-from .brewery import Brewery
-from .schedule import FoodTruckEvent
+from .brewery import Brewery, Venue
+from .schedule import FoodTruckEvent, MusicEvent
 
-__all__ = ["Brewery", "FoodTruckEvent"]
+__all__ = ["Brewery", "Venue", "FoodTruckEvent", "MusicEvent"]

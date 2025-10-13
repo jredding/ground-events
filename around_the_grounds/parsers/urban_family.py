@@ -364,6 +364,23 @@ class UrbanFamilyParser(BaseParser):
         """
         import re
 
+        # Define excluded terms used across all patterns
+        excluded_terms = [
+            "blk",
+            "black",
+            "white",
+            "temp",
+            "tmp",
+            "default",
+            "unnamed",
+            "placeholder",
+            "copy",
+            "screen",
+            "shot",
+            "updated",
+            "main",
+        ]
+
         # Clean up the filename
         name = filename.replace("_", " ").replace("-", " ").strip()
 
@@ -374,7 +391,9 @@ class UrbanFamilyParser(BaseParser):
         if logo_match:
             extracted = logo_match.group(1).strip()
             if len(extracted) > 1:
-                return extracted.title()
+                # Check for excluded terms before returning
+                if not any(term in extracted.lower() for term in excluded_terms):
+                    return extracted.title()
 
         # Pattern 2: "MainlogoB Webpreview Georgia's" -> "Georgia's"
         # Look for known food truck name patterns at the end
@@ -387,7 +406,9 @@ class UrbanFamilyParser(BaseParser):
                 word.lower() in ["logo", "main", "web", "preview", "header"]
                 for word in extracted.split()
             ):
-                return extracted
+                # Check for excluded terms before returning
+                if not any(term in extracted.lower() for term in excluded_terms):
+                    return extracted
 
         # Pattern 3: Simple case - just clean filename if it looks like a vendor name
         # Remove common prefixes and suffixes
@@ -405,20 +426,6 @@ class UrbanFamilyParser(BaseParser):
         # If what's left looks like a business name (letters, maybe spaces/apostrophes)
         if re.match(r"^[a-zA-Z][a-zA-Z0-9\s\']+$", cleaned) and len(cleaned) > 2:
             # Exclude obvious metadata terms
-            excluded_terms = [
-                "blk",
-                "black",
-                "white",
-                "temp",
-                "tmp",
-                "default",
-                "unnamed",
-                "placeholder",
-                "copy",
-                "screen",
-                "shot",
-                "updated",
-            ]
             if not any(term in cleaned.lower() for term in excluded_terms):
                 return cleaned.title()
 

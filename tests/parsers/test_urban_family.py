@@ -142,13 +142,13 @@ class TestUrbanFamilyParser:
         assert event1.start_time == datetime(2025, 7, 6, 13, 0)
         assert event1.end_time == datetime(2025, 7, 6, 19, 0)
 
-        # Check second event (filename extraction now works better)
+        # Check second event (vendor ID mapping now provides correct name)
         event2 = events[1]
         assert event2.brewery_key == "urban-family"
         assert event2.brewery_name == "Urban Family Brewing"
         assert (
-            event2.food_truck_name == "Blk"
-        )  # Extracted from UpdatedLogo_BLK.png filename
+            event2.food_truck_name == "Tolu Modern Fijian Cuisine"
+        )  # Mapped from vendor ID 67f6f44de4ca31e444ef637d (was incorrectly "Blk" from filename before)
         assert event2.date == datetime(2025, 7, 7)
         assert event2.start_time == datetime(2025, 7, 7, 16, 0)
         assert event2.end_time == datetime(2025, 7, 7, 20, 0)

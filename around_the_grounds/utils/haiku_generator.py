@@ -105,9 +105,17 @@ The haiku should feel authentic to the Pacific Northwest autumn/winter/spring/su
 CRITICAL FORMATTING REQUIREMENTS:
 - The haiku MUST be exactly 3 lines of text
 - Each line must contain actual words, not just emojis
-- Add a relevant emoji at the BEGINNING of the first line or at the END of the third line (inline with the text)
+- The haiku MUST start with an emoji at the BEGINNING of the first line AND end with an emoji at the END of the third line (inline with the text)
 - Do NOT put emojis on their own separate lines
-- Example format: "🍂 First line text / Second line text / Third line text"
+- Good examples:
+
+🍂 Autumn mist rolls in—
+Plaza Garcia's warmth glows
+at Obec's wood door 🍺
+
+☀️ Summer sun beams bright
+Where Ya At Matt hangs at Stoup,
+Hops drank with good eats 🍺
 
 Return only the haiku with inline emoji, nothing else."""
 

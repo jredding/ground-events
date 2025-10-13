@@ -102,7 +102,14 @@ Create a haiku (5-7-5 syllable structure) that captures the essence of today's f
 
 The haiku should feel authentic to the Pacific Northwest autumn/winter/spring/summer experience and celebrate the diversity of street food culture. Avoid being overly literal - aim for evocative, poetic language that honors the traditional haiku form.
 
-Add a relevant emoji to either side of the haiku"""
+CRITICAL FORMATTING REQUIREMENTS:
+- The haiku MUST be exactly 3 lines of text
+- Each line must contain actual words, not just emojis
+- Add a relevant emoji at the BEGINNING of the first line or at the END of the third line (inline with the text)
+- Do NOT put emojis on their own separate lines
+- Example format: "🍂 First line text / Second line text / Third line text"
+
+Return only the haiku with inline emoji, nothing else."""
 
             message = self.client.messages.create(
                 model="claude-sonnet-4-20250514",
@@ -143,12 +150,15 @@ Add a relevant emoji to either side of the haiku"""
         # Split by newlines and filter empty lines
         lines = [line.strip() for line in haiku.split("\n") if line.strip()]
 
-        # Haiku must have exactly 3 lines
-        if len(lines) < 3:
+        # Filter out lines that are ONLY emojis/symbols (no alphanumeric content)
+        text_lines = [line for line in lines if any(c.isalnum() for c in line)]
+
+        # Haiku must have exactly 3 lines with actual text content
+        if len(text_lines) < 3:
             self.logger.warning(
-                f"Incomplete haiku received ({len(lines)} lines), rejecting"
+                f"Incomplete haiku received ({len(text_lines)} text lines), rejecting"
             )
             return None
 
-        # Take first 3 lines if more than 3
-        return "\n".join(lines[:3])
+        # Take first 3 text lines
+        return "\n".join(text_lines[:3])

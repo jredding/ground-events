@@ -180,7 +180,25 @@
             margin-left: 6px;
             text-transform: uppercase;
         }
-        
+
+        .haiku {
+            background: none;
+            padding: 16px 0;
+            margin: 16px 0 20px 0;
+            text-align: center;
+            font-style: italic;
+            color: #4b5563;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            border-top: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .haiku-line {
+            display: block;
+            margin: 2px 0;
+        }
+
         .ai-info {
             color: #4b5563;
             font-size: 0.9rem;
@@ -268,7 +286,9 @@
                 <span class="stats-number" id="totalEvents">0</span>
                 <span class="stats-label">trucks total</span>
             </div>
-        
+
+            <div id="haiku" class="haiku" style="display: none;"></div>
+
         <div class="content">
             <div id="loading" class="loading">
 Loading food truck schedules...
@@ -323,11 +343,22 @@ Unable to load food truck data. Please try again later.
 
         function displayFoodTrucks(data) {
             document.getElementById('loading').style.display = 'none';
-            
+
             // Show stats at bottom
             const statsEl = document.getElementById('stats');
             const totalEventsEl = document.getElementById('totalEvents');
             totalEventsEl.textContent = data.total_events || data.events.length;
+
+            // Show haiku if available
+            if (data.haiku) {
+                const haikuEl = document.getElementById('haiku');
+                // Split haiku by newlines and create span elements for each line
+                const lines = data.haiku.split('\n');
+                haikuEl.innerHTML = lines.map(line =>
+                    `<span class="haiku-line">${line}</span>`
+                ).join('');
+                haikuEl.style.display = 'block';
+            }
             
             // Group events by date
             const eventsByDate = {};

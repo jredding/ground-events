@@ -22,6 +22,7 @@ except ImportError:
 from .config.settings import get_git_repository_url
 from .models import Brewery, FoodTruckEvent
 from .scrapers.coordinator import ScraperCoordinator, ScrapingError
+from .utils.haiku_generator import HaikuGenerator
 from .utils.timezone_utils import format_time_with_timezone
 
 
@@ -123,6 +124,39 @@ def format_events_output(
     return "\n".join(output)
 
 
+def _generate_haiku_for_today(events: List[FoodTruckEvent]) -> Optional[str]:
+    """Generate a haiku for today's food truck events."""
+    try:
+        # Get today's date in Pacific timezone
+        from datetime import date
+
+        today = date.today()
+
+        # Filter events to only today's date
+        today_events = [event for event in events if event.date.date() == today]
+
+        if not today_events:
+            logging.getLogger(__name__).debug("No events for today to generate haiku")
+            return None
+
+        # Initialize haiku generator and generate haiku
+        haiku_generator = HaikuGenerator()
+        haiku = asyncio.run(
+            haiku_generator.generate_haiku(
+                datetime.now(), today_events, max_retries=2
+            )
+        )
+
+        return haiku
+
+    except Exception as e:
+        # Log error but don't fail deployment
+        logging.getLogger(__name__).warning(
+            f"Failed to generate haiku, continuing without it: {e}"
+        )
+        return None
+
+
 def generate_web_data(
     events: List[FoodTruckEvent], error_messages: Optional[List[str]] = None
 ) -> dict:
@@ -170,6 +204,9 @@ def generate_web_data(
 
     unique_error_messages = list(dict.fromkeys(error_messages or []))
 
+    # Generate haiku for today's food trucks
+    haiku = _generate_haiku_for_today(events)
+
     return {
         "events": web_events,
         "updated": datetime.now(timezone.utc).isoformat(),
@@ -177,6 +214,7 @@ def generate_web_data(
         "timezone": "PT",  # Global timezone indicator
         "timezone_note": "All event times are in Pacific Time (PT), which includes both PST and PDT depending on the date.",
         "errors": unique_error_messages,
+        "haiku": haiku,  # AI-generated haiku for today's trucks
     }
 
 

@@ -344,6 +344,7 @@ class UrbanFamilyParser(BaseParser):
             "67f0ab6de9f3be17e2ef63bd": "Kathmandu momoCha",  # From debug logs
             "67f6f76ce4ca31e444ef6380": "Alebrije",  # From debug logs
             "67f5a888e9f3be17e2ef63ce": "Birrieria Pepe El Toro LLC",  # From debug logs
+            "67f6f44de4ca31e444ef637d": "Tolu Modern Fijian Cuisine",  # October 2025 - was incorrectly parsed as "Blk" from filename
             # Add more mappings as they're discovered
         }
 

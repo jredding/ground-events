@@ -124,7 +124,7 @@ def format_events_output(
     return "\n".join(output)
 
 
-def _generate_haiku_for_today(events: List[FoodTruckEvent]) -> Optional[str]:
+async def _generate_haiku_for_today(events: List[FoodTruckEvent]) -> Optional[str]:
     """Generate a haiku for today's food truck events."""
     try:
         # Get today's date in Pacific timezone
@@ -141,10 +141,8 @@ def _generate_haiku_for_today(events: List[FoodTruckEvent]) -> Optional[str]:
 
         # Initialize haiku generator and generate haiku
         haiku_generator = HaikuGenerator()
-        haiku = asyncio.run(
-            haiku_generator.generate_haiku(
-                datetime.now(), today_events, max_retries=2
-            )
+        haiku = await haiku_generator.generate_haiku(
+            datetime.now(), today_events, max_retries=2
         )
 
         return haiku
@@ -157,7 +155,7 @@ def _generate_haiku_for_today(events: List[FoodTruckEvent]) -> Optional[str]:
         return None
 
 
-def generate_web_data(
+async def generate_web_data(
     events: List[FoodTruckEvent], error_messages: Optional[List[str]] = None
 ) -> dict:
     """Generate web-friendly JSON data from events with Pacific timezone information."""
@@ -205,7 +203,7 @@ def generate_web_data(
     unique_error_messages = list(dict.fromkeys(error_messages or []))
 
     # Generate haiku for today's food trucks
-    haiku = _generate_haiku_for_today(events)
+    haiku = await _generate_haiku_for_today(events)
 
     return {
         "events": web_events,
@@ -218,7 +216,7 @@ def generate_web_data(
     }
 
 
-def deploy_to_web(
+async def deploy_to_web(
     events: List[FoodTruckEvent],
     errors: Optional[List[ScrapingError]] = None,
     git_repo_url: Optional[str] = None,
@@ -231,7 +229,7 @@ def deploy_to_web(
         # Generate web data
         error_messages = [error.to_user_message() for error in errors or []]
         error_messages = list(dict.fromkeys(error_messages))
-        web_data = generate_web_data(events, error_messages)
+        web_data = await generate_web_data(events, error_messages)
 
         print(f"✅ Generated web data: {len(events)} events")
         print(f"📍 Target repository: {repository_url}")
@@ -354,7 +352,7 @@ def _deploy_with_github_auth(web_data: dict, repository_url: str) -> bool:
         return False
 
 
-def preview_locally(
+async def preview_locally(
     events: List[FoodTruckEvent], errors: Optional[List[ScrapingError]] = None
 ) -> bool:
     """Generate web files locally in public/ directory for preview."""
@@ -364,7 +362,7 @@ def preview_locally(
         # Generate web data
         error_messages = [error.to_user_message() for error in errors or []]
         error_messages = list(dict.fromkeys(error_messages))
-        web_data = generate_web_data(events, error_messages)
+        web_data = await generate_web_data(events, error_messages)
 
         # Set up paths
         public_template_dir = Path.cwd() / "public_template"
@@ -415,6 +413,29 @@ async def scrape_food_trucks(config_path: Optional[str] = None) -> tuple:
     return events, errors
 
 
+async def async_main(args) -> int:
+    """Async main entry point that handles all async operations."""
+    events, errors = await scrape_food_trucks(args.config)
+    output = format_events_output(events, errors)
+    print(output)
+
+    # Deploy to web if requested
+    if args.deploy and events:
+        await deploy_to_web(events, errors, args.git_repo)
+
+    # Generate local preview if requested
+    if args.preview and events:
+        await preview_locally(events, errors)
+
+    # Return appropriate exit code
+    if errors and not events:
+        return 1  # Complete failure
+    elif errors:
+        return 2  # Partial success
+    else:
+        return 0  # Complete success
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """Main entry point for the CLI."""
     parser = argparse.ArgumentParser(
@@ -456,25 +477,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     print("=" * 50)
 
     try:
-        events, errors = asyncio.run(scrape_food_trucks(args.config))
-        output = format_events_output(events, errors)
-        print(output)
-
-        # Deploy to web if requested
-        if args.deploy and events:
-            deploy_to_web(events, errors, args.git_repo)
-
-        # Generate local preview if requested
-        if args.preview and events:
-            preview_locally(events, errors)
-
-        # Return appropriate exit code
-        if errors and not events:
-            return 1  # Complete failure
-        elif errors:
-            return 2  # Partial success
-        else:
-            return 0  # Complete success
+        return asyncio.run(async_main(args))
     except Exception as e:
         print(f"Critical Error: {e}")
         if args.verbose:

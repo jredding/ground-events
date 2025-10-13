@@ -52,8 +52,9 @@ def sample_events_future() -> list:
 class TestHaikuIntegration:
     """Test haiku integration with web data generation."""
 
+    @pytest.mark.asyncio
     @patch("around_the_grounds.main.HaikuGenerator")
-    def test_generate_web_data_includes_haiku(
+    async def test_generate_web_data_includes_haiku(
         self, mock_haiku_generator_class: Mock, sample_events_today: list
     ) -> None:
         """Test that web data includes haiku when generated successfully."""
@@ -67,25 +68,28 @@ class TestHaikuIntegration:
         mock_haiku_generator_class.return_value = mock_generator
 
         # Generate web data
-        web_data = generate_web_data(sample_events_today)
+        web_data = await generate_web_data(sample_events_today)
 
         # Verify haiku is in web data
         assert "haiku" in web_data
         assert web_data["haiku"] is not None
         assert "Test haiku" in web_data["haiku"]
 
+    @pytest.mark.asyncio
     @patch("around_the_grounds.main.HaikuGenerator")
-    def test_generate_web_data_no_haiku_on_error(
+    async def test_generate_web_data_no_haiku_on_error(
         self, mock_haiku_generator_class: Mock, sample_events_today: list
     ) -> None:
         """Test that web data gracefully handles haiku generation errors."""
+        from unittest.mock import AsyncMock
+
         # Mock haiku generator to raise an error
         mock_generator = Mock()
-        mock_generator.generate_haiku.side_effect = Exception("API Error")
+        mock_generator.generate_haiku = AsyncMock(side_effect=Exception("API Error"))
         mock_haiku_generator_class.return_value = mock_generator
 
         # Generate web data - should not fail
-        web_data = generate_web_data(sample_events_today)
+        web_data = await generate_web_data(sample_events_today)
 
         # Verify haiku is None but data is still valid
         assert "haiku" in web_data
@@ -93,13 +97,14 @@ class TestHaikuIntegration:
         assert "events" in web_data
         assert len(web_data["events"]) == 2
 
+    @pytest.mark.asyncio
     @patch("around_the_grounds.main.HaikuGenerator")
-    def test_generate_web_data_no_events_today(
+    async def test_generate_web_data_no_events_today(
         self, mock_haiku_generator_class: Mock, sample_events_future: list
     ) -> None:
         """Test that haiku is None when there are no events today."""
         # Generate web data with only future events
-        web_data = generate_web_data(sample_events_future)
+        web_data = await generate_web_data(sample_events_future)
 
         # Verify no haiku was generated
         assert "haiku" in web_data
@@ -107,8 +112,9 @@ class TestHaikuIntegration:
         assert "events" in web_data
         assert len(web_data["events"]) == 1
 
+    @pytest.mark.asyncio
     @patch("around_the_grounds.utils.haiku_generator.anthropic.Anthropic")
-    def test_haiku_for_today_filters_events(
+    async def test_haiku_for_today_filters_events(
         self, mock_anthropic_client: Mock, sample_events_today: list, sample_events_future: list
     ) -> None:
         """Test that _generate_haiku_for_today only uses today's events."""
@@ -126,7 +132,7 @@ class TestHaikuIntegration:
         all_events = sample_events_today + sample_events_future
 
         # Generate haiku
-        haiku = _generate_haiku_for_today(all_events)
+        haiku = await _generate_haiku_for_today(all_events)
 
         # Verify haiku was generated
         assert haiku is not None
@@ -143,8 +149,9 @@ class TestHaikuIntegration:
         assert "Oskar's Pizza" not in prompt
         assert "December 25" not in prompt
 
+    @pytest.mark.asyncio
     @patch("around_the_grounds.main.HaikuGenerator")
-    def test_generate_web_data_preserves_other_fields(
+    async def test_generate_web_data_preserves_other_fields(
         self, mock_haiku_generator_class: Mock, sample_events_today: list
     ) -> None:
         """Test that haiku addition doesn't affect other web data fields."""
@@ -156,7 +163,7 @@ class TestHaikuIntegration:
         mock_haiku_generator_class.return_value = mock_generator
 
         # Generate web data
-        web_data = generate_web_data(sample_events_today, error_messages=["Test error"])
+        web_data = await generate_web_data(sample_events_today, error_messages=["Test error"])
 
         # Verify all expected fields are present
         assert "events" in web_data
@@ -174,13 +181,14 @@ class TestHaikuIntegration:
         assert "Test error" in web_data["errors"]
         assert web_data["haiku"] == "Test haiku"
 
+    @pytest.mark.asyncio
     @patch("around_the_grounds.main.HaikuGenerator")
-    def test_generate_web_data_empty_events(
+    async def test_generate_web_data_empty_events(
         self, mock_haiku_generator_class: Mock
     ) -> None:
         """Test web data generation with no events."""
         # Generate web data with empty events
-        web_data = generate_web_data([])
+        web_data = await generate_web_data([])
 
         # Verify haiku is None (no events to generate from)
         assert "haiku" in web_data

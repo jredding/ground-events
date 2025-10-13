@@ -286,8 +286,8 @@ class TestCLI:
         capsys: Any,
     ) -> None:
         """Test successful main function execution."""
-        with patch("around_the_grounds.main.asyncio.run") as mock_run:
-            mock_run.return_value = (sample_cli_events, [])
+        with patch("around_the_grounds.main.scrape_food_trucks") as mock_scrape:
+            mock_scrape.return_value = (sample_cli_events, [])
 
             exit_code = main(["--config", temp_config_file])
 
@@ -301,8 +301,8 @@ class TestCLI:
         brewery = Brewery("failed", "Failed", "https://example.com")
         errors = [ScrapingError(brewery, "Network Error", "Failed")]
 
-        with patch("around_the_grounds.main.asyncio.run") as mock_run:
-            mock_run.return_value = ([], errors)
+        with patch("around_the_grounds.main.scrape_food_trucks") as mock_scrape:
+            mock_scrape.return_value = ([], errors)
 
             exit_code = main(["--config", temp_config_file])
 
@@ -320,8 +320,8 @@ class TestCLI:
         brewery = Brewery("failed", "Failed", "https://example.com")
         errors = [ScrapingError(brewery, "Network Error", "Failed")]
 
-        with patch("around_the_grounds.main.asyncio.run") as mock_run:
-            mock_run.return_value = (sample_cli_events, errors)
+        with patch("around_the_grounds.main.scrape_food_trucks") as mock_scrape:
+            mock_scrape.return_value = (sample_cli_events, errors)
 
             exit_code = main(["--config", temp_config_file])
 

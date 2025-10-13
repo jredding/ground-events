@@ -144,7 +144,7 @@ class DeploymentActivities:
 
         error_messages = list(dict.fromkeys(error_messages))
 
-        return generate_web_data(reconstructed_events, error_messages)
+        return await generate_web_data(reconstructed_events, error_messages)
 
     @activity.defn
     async def deploy_to_git(self, params: Dict[str, Any]) -> bool:

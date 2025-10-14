@@ -322,7 +322,9 @@ class TestSalehsCornerParser:
 
     def test_extract_vendor_name_empty(self, parser: SalehsCornerParser) -> None:
         """Test extracting empty vendor name."""
-        test_cases = [
+        from typing import Any, Dict, List
+
+        test_cases: List[Dict[str, Any]] = [
             {"name": "", "id": 123},
             {"name": "   ", "id": 123},
             {"name": "TBD", "id": 123},
@@ -337,6 +339,7 @@ class TestSalehsCornerParser:
 
     # EVENT PARSING TESTS
 
+    @freeze_time("2025-08-01")
     def test_parse_single_event_complete(self, parser: SalehsCornerParser) -> None:
         """Test parsing a complete single event."""
         event_data = {
@@ -378,6 +381,7 @@ class TestSalehsCornerParser:
         result = parser._parse_single_event(event_data)
         assert result is None
 
+    @freeze_time("2025-08-01")
     def test_parse_single_event_no_vendor_name(
         self, parser: SalehsCornerParser
     ) -> None:
@@ -423,6 +427,7 @@ class TestSalehsCornerParser:
 
     # TIMESTAMP VALIDATION TESTS
 
+    @freeze_time("2025-08-01")
     def test_parse_event_timestamps_valid(self, parser: SalehsCornerParser) -> None:
         """Test parsing valid event timestamps."""
         event_data = {
@@ -443,7 +448,9 @@ class TestSalehsCornerParser:
         self, parser: SalehsCornerParser
     ) -> None:
         """Test parsing timestamps with missing fields."""
-        test_cases = [
+        from typing import Any, Dict, List
+
+        test_cases: List[Dict[str, Any]] = [
             {"id": 123},  # No timestamp fields
             {
                 "id": 123,
@@ -525,6 +532,7 @@ class TestSalehsCornerParser:
                 assert len(events) == 0
 
     @pytest.mark.asyncio
+    @freeze_time("2025-08-01")
     async def test_parse_events_with_partial_data(
         self, parser: SalehsCornerParser
     ) -> None:
@@ -594,6 +602,7 @@ class TestSalehsCornerParser:
 
     # FOOD CATEGORIES TESTS
 
+    @freeze_time("2025-08-01")
     def test_parse_event_with_food_categories(self, parser: SalehsCornerParser) -> None:
         """Test parsing event with food categories."""
         event_data = {
@@ -616,6 +625,7 @@ class TestSalehsCornerParser:
         assert result is not None
         assert result.description == "Cuisine: Thai, Asian, Vegetarian"
 
+    @freeze_time("2025-08-01")
     def test_parse_event_without_food_categories(
         self, parser: SalehsCornerParser
     ) -> None:

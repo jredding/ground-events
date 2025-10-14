@@ -413,7 +413,7 @@ async def scrape_food_trucks(config_path: Optional[str] = None) -> tuple:
     return events, errors
 
 
-async def async_main(args) -> int:
+async def async_main(args: argparse.Namespace) -> int:
     """Async main entry point that handles all async operations."""
     events, errors = await scrape_food_trucks(args.config)
     output = format_events_output(events, errors)

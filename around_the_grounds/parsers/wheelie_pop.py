@@ -114,24 +114,32 @@ class WheeliePopParser(BaseParser):
         soup = BeautifulSoup(html, "html.parser")
 
         container = soup.find("div", id=self.CALENDAR_ID)
-        if not container:
+        if not container or not isinstance(container, Tag):
             self.logger.warning("Wheelie Pop calendar container not found in HTML")
             return []
 
         list_container = container.find("ul", class_="mc-list")
-        if not list_container:
+        if not list_container or not isinstance(list_container, Tag):
             self.logger.debug("Wheelie Pop calendar list view missing")
             return []
 
         events: List[FoodTruckEvent] = []
         for day_node in list_container.find_all("li"):
-            if "mc-events" not in day_node.get("class", []):
+            if not isinstance(day_node, Tag):
                 continue
+
+            classes = day_node.get("class")
+            if not isinstance(classes, list) or "mc-events" not in classes:
+                continue
+
             date = self._parse_date_from_day(day_node)
             if not date:
                 continue
 
             for article in day_node.find_all("article"):
+                if not isinstance(article, Tag):
+                    continue
+
                 event = self._parse_food_truck_article(article, date)
                 if not event:
                     continue
@@ -148,8 +156,8 @@ class WheeliePopParser(BaseParser):
     def _parse_food_truck_article(
         self, article: Tag, date: datetime
     ) -> Optional[FoodTruckEvent]:
-        classes = article.get("class", [])
-        if "mc_food-truck" not in classes:
+        classes = article.get("class")
+        if not isinstance(classes, list) or "mc_food-truck" not in classes:
             return None
 
         title_elem = article.find("h3", class_="event-title")
@@ -174,11 +182,11 @@ class WheeliePopParser(BaseParser):
 
     def _parse_time(self, article: Tag, selector: str) -> Optional[datetime]:
         time_node = article.select_one(selector)
-        if not time_node:
+        if not time_node or not isinstance(time_node, Tag):
             return None
 
         datetime_attr = time_node.get("datetime") or time_node.get("content")
-        if not datetime_attr:
+        if not datetime_attr or not isinstance(datetime_attr, str):
             return None
 
         try:
@@ -190,7 +198,10 @@ class WheeliePopParser(BaseParser):
         return utc_to_pacific_naive(parsed)
 
     def _parse_date_from_day(self, day_node: Tag) -> Optional[datetime]:
-        day_id = day_node.get("id", "")
+        day_id = day_node.get("id")
+        if not isinstance(day_id, str):
+            return None
+
         match = re.search(r"list-(\d{4})-(\d{2})-(\d{2})", day_id)
         if not match:
             return None

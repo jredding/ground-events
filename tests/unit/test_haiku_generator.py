@@ -83,11 +83,14 @@ class TestHaikuGenerator:
     ) -> None:
         """Test haiku generation with API timeout."""
         import anthropic
+        import httpx
 
         # Mock API timeout error
         mock_client_instance = mock_anthropic_client.return_value
+        # Create a mock request for the timeout error
+        mock_request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
         mock_client_instance.messages.create = Mock(
-            side_effect=anthropic.APITimeoutError("Timeout")
+            side_effect=anthropic.APITimeoutError(mock_request)
         )
         haiku_generator.client = mock_client_instance
 

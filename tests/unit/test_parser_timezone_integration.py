@@ -9,7 +9,6 @@ from around_the_grounds.models import Brewery
 from around_the_grounds.parsers.obec_brewing import ObecBrewingParser
 from around_the_grounds.parsers.stoup_ballard import StoupBallardParser
 from around_the_grounds.parsers.urban_family import UrbanFamilyParser
-from around_the_grounds.parsers.wheelie_pop import WheeliePopParser
 
 # ZoneInfo not used in this test file
 
@@ -41,11 +40,6 @@ class TestParserTimezoneConsistency:
     def obec_parser(self, sample_brewery: Brewery) -> ObecBrewingParser:
         """Create ObecBrewing parser."""
         return ObecBrewingParser(sample_brewery)
-
-    @pytest.fixture
-    def wheelie_parser(self, sample_brewery: Brewery) -> WheeliePopParser:
-        """Create WheeliePoP parser."""
-        return WheeliePopParser(sample_brewery)
 
 
 class TestStoupBallardTimezone:
@@ -250,72 +244,6 @@ class TestObecBrewingTimezone:
         # Should interpret as PM hours (food truck typical hours)
         assert start_time.hour == 16  # 4 PM
         assert end_time.hour == 20  # 8 PM
-
-
-class TestWheeliePopTimezone:
-    """Test WheeliePoP parser timezone handling."""
-
-    @pytest.fixture
-    def sample_brewery(self) -> Brewery:
-        """Create a test brewery."""
-        return Brewery(
-            key="wheelie-pop",
-            name="Wheelie Pop",
-            url="https://wheeliepop.com",
-            parser_config={},
-        )
-
-    @pytest.fixture
-    def parser(self, sample_brewery: Brewery) -> WheeliePopParser:
-        """Create parser instance."""
-        return WheeliePopParser(sample_brewery)
-
-    def test_date_parsing_uses_pacific_context(self, parser: WheeliePopParser) -> None:
-        """Test that date parsing uses Pacific timezone context."""
-        with patch(
-            "around_the_grounds.parsers.wheelie_pop.get_pacific_year"
-        ) as mock_year, patch(
-            "around_the_grounds.parsers.wheelie_pop.get_pacific_month"
-        ) as mock_month, patch(
-            "around_the_grounds.parsers.wheelie_pop.parse_date_with_pacific_context"
-        ) as mock_parse:
-            mock_year.return_value = 2025
-            mock_month.return_value = 7  # July
-            mock_parse.return_value = datetime(2025, 8, 3)
-
-            # Parse a date in M/D format
-            result = parser._parse_date("8/3")
-
-            # Should use Pacific timezone utilities
-            mock_year.assert_called_once()
-            mock_month.assert_called_once()
-            mock_parse.assert_called_once_with(2025, 8, 3)
-
-            assert result is not None
-            assert result == datetime(2025, 8, 3)
-
-    def test_cross_timezone_date_consistency(self, parser: WheeliePopParser) -> None:
-        """Test date parsing consistency across system timezones."""
-        # Mock Pacific time as different from potential system time
-        with patch(
-            "around_the_grounds.parsers.wheelie_pop.get_pacific_year"
-        ) as mock_year, patch(
-            "around_the_grounds.parsers.wheelie_pop.get_pacific_month"
-        ) as mock_month:
-            mock_year.return_value = 2024
-            mock_month.return_value = 11  # November
-
-            # Parse a date that could be interpreted differently in different timezones
-            result = parser._parse_date("12/25")  # December 25
-
-            # Should use Pacific timezone context for year calculation
-            mock_year.assert_called_once()
-            mock_month.assert_called_once()
-
-            assert result is not None
-            assert result.year == 2024  # Current year since December > current November
-            assert result.month == 12
-            assert result.day == 25
 
 
 class TestDSTTransitionScenarios:

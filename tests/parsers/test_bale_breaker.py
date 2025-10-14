@@ -12,6 +12,7 @@ except ImportError:
     from backports.zoneinfo import ZoneInfo  # type: ignore
 import pytest
 from aioresponses import aioresponses
+from freezegun import freeze_time
 
 from around_the_grounds.models import Brewery
 from around_the_grounds.parsers.bale_breaker import BaleBreakerParser
@@ -70,6 +71,7 @@ class TestBaleBreakerParser:
         ]
 
     @pytest.mark.asyncio
+    @freeze_time("2025-07-01")
     async def test_parse_success_with_api_data(
         self,
         parser: BaleBreakerParser,
@@ -81,7 +83,7 @@ class TestBaleBreakerParser:
             # Mock the main page request
             m.get(parser.brewery.url, status=200, body=sample_html_with_calendar)
 
-            # Mock the API requests for different months
+            # Mock the API requests for different months (using current format MMMM-YYYY)
             base_api_url = "https://www.bbycballard.com/api/open/GetItemsByMonth"
             for month in ["July-2025", "August-2025", "September-2025"]:
                 api_url = f"{base_api_url}?month={month}&collectionId=61328af17400707612fccbc6"
@@ -117,6 +119,7 @@ class TestBaleBreakerParser:
                 assert events[0].brewery_key == "yonder-balebreaker"
 
     @pytest.mark.asyncio
+    @freeze_time("2025-07-01")
     async def test_parse_api_error_fallback(
         self, parser: BaleBreakerParser, sample_html_with_calendar: str
     ) -> None:
@@ -125,7 +128,7 @@ class TestBaleBreakerParser:
             # Mock successful main page request
             m.get(parser.brewery.url, status=200, body=sample_html_with_calendar)
 
-            # Mock failing API requests
+            # Mock failing API requests (using current format MMMM-YYYY)
             base_api_url = "https://www.bbycballard.com/api/open/GetItemsByMonth"
             for month in ["July-2025", "August-2025", "September-2025"]:
                 api_url = f"{base_api_url}?month={month}&collectionId=61328af17400707612fccbc6"
@@ -233,6 +236,7 @@ class TestBaleBreakerParser:
         assert event.brewery_key == "yonder-balebreaker"
 
     @pytest.mark.asyncio
+    @freeze_time("2025-07-01")
     async def test_fetch_calendar_events_success(
         self, parser: BaleBreakerParser, sample_api_response: List[Dict[str, Any]]
     ) -> None:
@@ -240,7 +244,7 @@ class TestBaleBreakerParser:
         collection_id = "test123"
 
         with aioresponses() as m:
-            # Mock API requests for different months
+            # Mock API requests for different months (using current format MMMM-YYYY)
             base_api_url = "https://www.bbycballard.com/api/open/GetItemsByMonth"
             for month in ["July-2025", "August-2025", "September-2025"]:
                 api_url = f"{base_api_url}?month={month}&collectionId={collection_id}"
@@ -255,6 +259,7 @@ class TestBaleBreakerParser:
                 assert events[1].food_truck_name == "Wood Shop BBQ"
 
     @pytest.mark.asyncio
+    @freeze_time("2025-07-01")
     async def test_fetch_calendar_events_api_error(
         self, parser: BaleBreakerParser
     ) -> None:
@@ -262,7 +267,7 @@ class TestBaleBreakerParser:
         collection_id = "test123"
 
         with aioresponses() as m:
-            # Mock failing API requests
+            # Mock failing API requests (using current format MMMM-YYYY)
             base_api_url = "https://www.bbycballard.com/api/open/GetItemsByMonth"
             for month in ["July-2025", "August-2025", "September-2025"]:
                 api_url = f"{base_api_url}?month={month}&collectionId={collection_id}"
@@ -275,6 +280,7 @@ class TestBaleBreakerParser:
                 assert len(events) == 0
 
     @pytest.mark.asyncio
+    @freeze_time("2025-07-01")
     async def test_parse_real_html_fixture(
         self, parser: BaleBreakerParser, html_fixtures_dir: Path
     ) -> None:
@@ -287,7 +293,7 @@ class TestBaleBreakerParser:
             with aioresponses() as m:
                 m.get(parser.brewery.url, status=200, body=real_html)
 
-                # Mock API responses since we can't make real API calls in tests
+                # Mock API responses since we can't make real API calls in tests (using current format MMMM-YYYY)
                 base_api_url = "https://www.bbycballard.com/api/open/GetItemsByMonth"
                 for month in ["July-2025", "August-2025", "September-2025"]:
                     api_url = f"{base_api_url}?month={month}&collectionId=61328af17400707612fccbc6"

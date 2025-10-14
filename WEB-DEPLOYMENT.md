@@ -139,7 +139,7 @@ uv run python -m around_the_grounds.temporal.schedule_manager create --schedule-
 # 4. Trigger Vercel deployment
 ```
 
-See [./SCHEDULES.md] for complete schedule management documentation.
+See [SCHEDULES.md](./SCHEDULES.md) for complete schedule management documentation.
 
 ## Verifying Deployments
 
@@ -269,7 +269,7 @@ uv run around-the-grounds --deploy --verbose
 # Check logs for authentication errors
 ```
 
-See [./DEPLOYMENT.MD] for GitHub App configuration details.
+See [DEPLOYMENT.MD](./DEPLOYMENT.MD) for GitHub App configuration details.
 
 ## Web Template Structure
 

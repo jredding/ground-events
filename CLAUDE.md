@@ -91,7 +91,7 @@ This allows you to test web interface changes, verify data accuracy, and debug i
 
 ### Web Deployment
 
-**IMPORTANT**: Web deployment requires GitHub App authentication setup. See [./DEPLOYMENT.MD] for configuration details.
+**IMPORTANT**: Web deployment requires GitHub App authentication setup. See [DEPLOYMENT.MD](./DEPLOYMENT.MD) for configuration details.
 
 ```bash
 # Deploy fresh data to website (full workflow)
@@ -118,10 +118,10 @@ uv run around-the-grounds --deploy --verbose  # Recommended for scheduled runs
 ```
 
 ### Deployment
-See [./DEPLOYMENT.MD]
+See [DEPLOYMENT.MD](./DEPLOYMENT.MD)
 
 ### Temporal Schedule Management
-See [./SCHEDULES.md]
+See [SCHEDULES.md](./SCHEDULES.md)
 
 #### Schedule Features
 - **Configurable intervals**: Any number of minutes (5, 30, 60, 120, etc.)
@@ -263,25 +263,25 @@ The CLI is configured in `pyproject.toml` with entry point `around-the-grounds =
 
 ## Adding New Breweries
 
-See [./ADDING-BREWERIES.md]
+See [ADDING-BREWERIES.md](./ADDING-BREWERIES.md)
 
 ## Haiku Generator
 
 The system includes AI-powered haiku generation that creates contextual, poetic descriptions of daily food truck scenes. Haikus reflect the current season, feature specific food trucks and breweries, and follow traditional 5-7-5 syllable structure.
 
-See [./HAIKU-GENERATOR.md] for detailed documentation on configuration, usage, and implementation.
+See [HAIKU-GENERATOR.md](./HAIKU-GENERATOR.md) for detailed documentation on configuration, usage, and implementation.
 
 ## AI Vision Analysis
 
 The system includes AI-powered vision analysis to extract food truck vendor names from logos and images when text-based methods fail. The analyzer uses Claude Vision API as a fallback, with retry logic and graceful degradation.
 
-See [./VISION-ANALYSIS.md] for detailed documentation on configuration, usage, and implementation.
+See [VISION-ANALYSIS.md](./VISION-ANALYSIS.md) for detailed documentation on configuration, usage, and implementation.
 
 ## Error Handling Strategy
 
 The application implements comprehensive error handling with error isolation, graceful degradation, and selective retry logic.
 
-See [./ERROR-HANDLING.md] for the complete error handling strategy guide.
+See [ERROR-HANDLING.md](./ERROR-HANDLING.md) for the complete error handling strategy guide.
 
 ## Code Standards
 
@@ -298,7 +298,7 @@ See [./ERROR-HANDLING.md] for the complete error handling strategy guide.
 
 The project includes a comprehensive test suite with 196 tests covering unit, integration, vision analysis, haiku generation, and error scenarios.
 
-See [./TESTING.md] for the complete testing strategy and guide.
+See [TESTING.md](./TESTING.md) for the complete testing strategy and guide.
 
 ## Development Workflow
 
@@ -328,13 +328,13 @@ uv run around-the-grounds --deploy
 
 ## Web Deployment Workflow
 
-See [./WEB-DEPLOYMENT.md] for the complete web deployment workflow guide.
+See [WEB-DEPLOYMENT.md](./WEB-DEPLOYMENT.md) for the complete web deployment workflow guide.
 
 ## Type Annotations
 
 The project uses strict type checking with MyPy (`disallow_untyped_defs = true`) and Pylance.
 
-See [./TYPE-ANNOTATIONS.md] for the comprehensive type annotation maintenance guide.
+See [TYPE-ANNOTATIONS.md](./TYPE-ANNOTATIONS.md) for the comprehensive type annotation maintenance guide.
 
 ## Troubleshooting Common Issues
 

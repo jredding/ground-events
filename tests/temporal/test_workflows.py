@@ -11,7 +11,7 @@ class TestWorkflowDataClasses:
         params = WorkflowParams()
         assert params.config_path is None
         assert params.deploy is False
-        assert params.max_parallel_scrapes == 5
+        assert params.max_parallel_scrapes == 10
 
     def test_workflow_params_custom(self) -> None:
         """Test WorkflowParams with custom values."""

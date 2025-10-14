@@ -239,7 +239,7 @@ class WorkflowParams:
     config_path: Optional[str] = None      # Path to brewery config JSON
     deploy: bool = False                   # Whether to deploy to web
     git_repository_url: str = DEFAULT_GIT_REPOSITORY
-    max_parallel_scrapes: int = 5          # Max concurrent scrape activities
+    max_parallel_scrapes: int = 10         # Max concurrent scrape activities
 ```
 
 - `max_parallel_scrapes` controls how many `scrape_single_brewery` activities execute

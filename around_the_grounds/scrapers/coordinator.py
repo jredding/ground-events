@@ -80,9 +80,15 @@ class ScraperCoordinator:
                     )
                     continue
 
-                events, error = result
-                if error:
-                    self.errors.append(error)
+                # Type narrowing: result is Tuple[List[FoodTruckEvent], Optional[ScrapingError]]
+                assert isinstance(
+                    result, tuple
+                ), "Result should be a tuple from _scrape_brewery"
+                events: List[FoodTruckEvent]
+                error_opt: Optional[ScrapingError]
+                events, error_opt = result
+                if error_opt:
+                    self.errors.append(error_opt)
                 all_events.extend(events)
 
         # Filter to next 7 days and sort by date

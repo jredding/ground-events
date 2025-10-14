@@ -11,12 +11,16 @@ class TestWorkflowDataClasses:
         params = WorkflowParams()
         assert params.config_path is None
         assert params.deploy is False
+        assert params.max_parallel_scrapes == 5
 
     def test_workflow_params_custom(self) -> None:
         """Test WorkflowParams with custom values."""
-        params = WorkflowParams(config_path="/test/config.json", deploy=True)
+        params = WorkflowParams(
+            config_path="/test/config.json", deploy=True, max_parallel_scrapes=3
+        )
         assert params.config_path == "/test/config.json"
         assert params.deploy is True
+        assert params.max_parallel_scrapes == 3
 
     def test_workflow_result_minimal(self) -> None:
         """Test WorkflowResult with minimal data."""
@@ -95,6 +99,7 @@ class TestActivitiesImport:
         scrape_activities = ScrapeActivities()
         assert hasattr(scrape_activities, "load_brewery_config")
         assert hasattr(scrape_activities, "scrape_food_trucks")
+        assert hasattr(scrape_activities, "scrape_single_brewery")
 
         deploy_activities = DeploymentActivities()
         assert hasattr(deploy_activities, "generate_web_data")

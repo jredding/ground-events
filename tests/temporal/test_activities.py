@@ -247,6 +247,85 @@ class TestScrapeActivities:
                 == "Failed to fetch information for brewery: Test Brewery 1"
             )
 
+    @pytest.mark.asyncio
+    async def test_scrape_single_brewery_success(
+        self, mock_brewery_configs: List[Dict[str, Any]]
+    ) -> None:
+        """Test scraping a single brewery without errors."""
+        activities = ScrapeActivities()
+
+        with patch(
+            "around_the_grounds.temporal.activities.ScraperCoordinator"
+        ) as mock_coordinator_class:
+            mock_coordinator = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            from around_the_grounds.models import FoodTruckEvent
+
+            mock_event = FoodTruckEvent(
+                brewery_key="test-brewery-1",
+                brewery_name="Test Brewery 1",
+                food_truck_name="Test Truck 1",
+                date=datetime(2025, 7, 6),
+                start_time=None,
+                end_time=None,
+                description=None,
+                ai_generated_name=False,
+            )
+
+            mock_coordinator.scrape_one = AsyncMock(return_value=([mock_event], None))
+
+            result = await activities.scrape_single_brewery(mock_brewery_configs[0])
+
+            assert "events" in result
+            assert "error" in result
+            assert len(result["events"]) == 1
+            assert result["error"] is None
+
+            mock_coordinator_class.assert_called_once_with(max_concurrent=1)
+            mock_coordinator.scrape_one.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_scrape_single_brewery_with_error(
+        self, mock_brewery_configs: List[Dict[str, Any]]
+    ) -> None:
+        """Test scraping a single brewery that returns an error."""
+        activities = ScrapeActivities()
+
+        with patch(
+            "around_the_grounds.temporal.activities.ScraperCoordinator"
+        ) as mock_coordinator_class:
+            mock_coordinator = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            from around_the_grounds.models import Brewery
+            from around_the_grounds.scrapers.coordinator import ScrapingError
+
+            error_brewery = Brewery(
+                key="test-brewery-1",
+                name="Test Brewery 1",
+                url="https://test1.com",
+                parser_config={},
+            )
+
+            mock_error = ScrapingError(
+                brewery=error_brewery,
+                error_type="network_error",
+                message="Connection timeout",
+            )
+
+            mock_coordinator.scrape_one = AsyncMock(return_value=([], mock_error))
+
+            result = await activities.scrape_single_brewery(mock_brewery_configs[0])
+
+            assert result["events"] == []
+            assert result["error"] is not None
+            assert result["error"]["brewery_name"] == "Test Brewery 1"
+            assert (
+                result["error"]["user_message"]
+                == "Failed to fetch information for brewery: Test Brewery 1"
+            )
+
 
 class TestDeploymentActivities:
     """Tests for DeploymentActivities."""

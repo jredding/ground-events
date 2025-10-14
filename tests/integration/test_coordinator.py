@@ -158,6 +158,102 @@ class TestScraperCoordinator:
             assert len(errors) == 2
 
     @pytest.mark.asyncio
+    async def test_scrape_one_success_filters_and_returns(
+        self, coordinator: ScraperCoordinator
+    ) -> None:
+        """Test scrape_one filters events and returns no error on success."""
+        future_date = datetime.now() + timedelta(days=3)
+        past_date = datetime.now() - timedelta(days=2)
+
+        brewery = Brewery(
+            key="single-test",
+            name="Single Test Brewery",
+            url="https://example.com",
+            parser_config={},
+        )
+
+        future_event = FoodTruckEvent(
+            brewery_key="single-test",
+            brewery_name="Single Test Brewery",
+            food_truck_name="Future Truck",
+            date=future_date,
+        )
+        past_event = FoodTruckEvent(
+            brewery_key="single-test",
+            brewery_name="Single Test Brewery",
+            food_truck_name="Past Truck",
+            date=past_date,
+        )
+
+        with patch(
+            "around_the_grounds.scrapers.coordinator.ParserRegistry.get_parser"
+        ) as mock_get_parser, patch(
+            "around_the_grounds.scrapers.coordinator.aiohttp.ClientSession"
+        ) as mock_client_session, patch(
+            "around_the_grounds.scrapers.coordinator.aiohttp.TCPConnector"
+        ) as mock_connector:
+            parser_instance = AsyncMock()
+            parser_instance.parse.return_value = [future_event, past_event]
+
+            def parser_class(_: Brewery) -> AsyncMock:
+                return parser_instance
+
+            mock_get_parser.return_value = parser_class
+
+            session_cm = AsyncMock()
+            session_cm.__aenter__.return_value = AsyncMock()
+            session_cm.__aexit__.return_value = False
+            mock_client_session.return_value = session_cm
+            mock_connector.return_value = AsyncMock()
+
+            events, error = await coordinator.scrape_one(brewery)
+
+            assert error is None
+            assert len(events) == 1
+            assert events[0].food_truck_name == "Future Truck"
+            assert coordinator.get_errors() == []
+
+    @pytest.mark.asyncio
+    async def test_scrape_one_returns_error(
+        self, coordinator: ScraperCoordinator
+    ) -> None:
+        """Test scrape_one returns serialized error when parsing fails."""
+        brewery = Brewery(
+            key="single-test",
+            name="Single Test Brewery",
+            url="https://example.com",
+            parser_config={},
+        )
+
+        with patch(
+            "around_the_grounds.scrapers.coordinator.ParserRegistry.get_parser"
+        ) as mock_get_parser, patch(
+            "around_the_grounds.scrapers.coordinator.aiohttp.ClientSession"
+        ) as mock_client_session, patch(
+            "around_the_grounds.scrapers.coordinator.aiohttp.TCPConnector"
+        ) as mock_connector:
+            parser_instance = AsyncMock()
+            parser_instance.parse.side_effect = asyncio.TimeoutError
+
+            def parser_class(_: Brewery) -> AsyncMock:
+                return parser_instance
+
+            mock_get_parser.return_value = parser_class
+
+            session_cm = AsyncMock()
+            session_cm.__aenter__.return_value = AsyncMock()
+            session_cm.__aexit__.return_value = False
+            mock_client_session.return_value = session_cm
+            mock_connector.return_value = AsyncMock()
+
+            events, error = await coordinator.scrape_one(brewery)
+
+            assert events == []
+            assert error is not None
+            assert error.brewery.key == "single-test"
+            assert coordinator.get_errors() == [error]
+
+    @pytest.mark.asyncio
     async def test_scrape_all_empty_brewery_list(
         self, coordinator: ScraperCoordinator
     ) -> None:

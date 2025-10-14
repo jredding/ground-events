@@ -13,6 +13,7 @@ class WorkflowParams:
     config_path: Optional[str] = None
     deploy: bool = False
     git_repository_url: str = DEFAULT_GIT_REPOSITORY
+    max_parallel_scrapes: int = 5
 
 
 @dataclass

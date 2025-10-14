@@ -236,9 +236,14 @@ The workflow accepts parameters via the `WorkflowParams` data class:
 ```python
 @dataclass
 class WorkflowParams:
-    config_path: Optional[str] = None  # Path to brewery config JSON
-    deploy: bool = False               # Whether to deploy to web
+    config_path: Optional[str] = None      # Path to brewery config JSON
+    deploy: bool = False                   # Whether to deploy to web
+    git_repository_url: str = DEFAULT_GIT_REPOSITORY
+    max_parallel_scrapes: int = 5          # Max concurrent scrape activities
 ```
+
+- `max_parallel_scrapes` controls how many `scrape_single_brewery` activities execute
+  concurrently before the workflow batches additional breweries.
 
 ### Workflow Results
 
@@ -261,7 +266,12 @@ class WorkflowResult:
 Activities that wrap existing scraping functionality:
 
 - `load_brewery_config(config_path)`: Load brewery configuration
+- `scrape_single_brewery(brewery_config)`: Scrape one brewery (used for fan-out)
 - `scrape_food_trucks(brewery_configs)`: Scrape all breweries for events
+
+`scrape_single_brewery` powers the parallel fan-out within the workflow. The legacy
+`scrape_food_trucks` activity remains available for sequential batch scraping and
+compatibility with existing tests or tooling.
 
 ### DeploymentActivities
 
@@ -274,7 +284,8 @@ Activities for web deployment:
 
 Activities are configured with appropriate timeouts:
 - Configuration loading: 30 seconds
-- Scraping: 5 minutes (handles multiple brewery sites)
+- Single-brewery scraping: 2 minutes per activity (runs in parallel batches)
+- Batch scraping fallback: 5 minutes (legacy sequential activity)
 - Web data generation: 30 seconds
 - Git deployment: 2 minutes
 
@@ -542,6 +553,7 @@ Main workflow that orchestrates the complete pipeline.
 
 - `test_connectivity() -> str`: Test activity connectivity
 - `load_brewery_config(config_path: Optional[str]) -> List[Dict]`: Load brewery configuration
+- `scrape_single_brewery(brewery_config: Dict) -> Dict`: Scrape events for a single brewery
 - `scrape_food_trucks(brewery_configs: List[Dict]) -> Tuple[List[Dict], List[Dict]]`: Scrape events
 
 ### DeploymentActivities

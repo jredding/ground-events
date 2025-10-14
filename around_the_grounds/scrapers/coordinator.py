@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import aiohttp
 
@@ -58,13 +58,13 @@ class ScraperCoordinator:
         ) as session:
             tasks = []
             for brewery in breweries:
-                task = self._scrape_brewery_with_error_handling(session, brewery)
+                task = self._scrape_brewery(session, brewery)
                 tasks.append(task)
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # Aggregate results
-            all_events = []
+            all_events: List[FoodTruckEvent] = []
             for i, result in enumerate(results):
                 if isinstance(result, Exception):
                     # This shouldn't happen with our error handling, but just in case
@@ -80,33 +80,46 @@ class ScraperCoordinator:
                     )
                     continue
 
-                if isinstance(result, list):
-                    all_events.extend(result)
+                events, error = result
+                if error:
+                    self.errors.append(error)
+                all_events.extend(events)
 
         # Filter to next 7 days and sort by date
         return self._filter_and_sort_events(all_events)
 
-    async def _scrape_brewery_with_error_handling(
+    async def scrape_one(
+        self, brewery: Brewery
+    ) -> Tuple[List[FoodTruckEvent], Optional[ScrapingError]]:
+        """Scrape a single brewery using an isolated HTTP session."""
+        connector = aiohttp.TCPConnector(limit=1)
+        async with aiohttp.ClientSession(
+            connector=connector,
+            timeout=self.timeout,
+            headers={"User-Agent": "Around-the-Grounds Food Truck Scraper"},
+        ) as session:
+            events, error = await self._scrape_brewery(session, brewery)
+
+        filtered_events = self._filter_and_sort_events(events)
+        self.errors = [error] if error else []
+        return filtered_events, error
+
+    async def _scrape_brewery(
         self, session: aiohttp.ClientSession, brewery: Brewery
-    ) -> List[FoodTruckEvent]:
-        """
-        Scrape a single brewery with comprehensive error handling and retry logic.
-        """
-        # Create parser once outside retry loop - handle config errors first
+    ) -> Tuple[List[FoodTruckEvent], Optional[ScrapingError]]:
+        """Scrape a single brewery with comprehensive error handling and retry logic."""
         try:
             parser_class = ParserRegistry.get_parser(brewery.key)
             parser = parser_class(brewery)
         except KeyError as e:
-            # Configuration error - don't retry
             error = ScrapingError(
                 brewery=brewery,
                 error_type="Configuration Error",
                 message=f"Parser not found for brewery key: {brewery.key}",
                 details=str(e),
             )
-            self.errors.append(error)
             self.logger.error(f"Configuration error for {brewery.name}: {str(e)}")
-            return []
+            return [], error
 
         for attempt in range(self.max_retries):
             try:
@@ -115,7 +128,7 @@ class ScraperCoordinator:
                 )
                 events = await parser.parse(session)
                 self.logger.info(f"Found {len(events)} events for {brewery.name}")
-                return events
+                return events, None
 
             except (asyncio.TimeoutError, aiohttp.ServerTimeoutError):
                 error_msg = f"Connection timeout after {self.timeout.total}s"
@@ -126,15 +139,13 @@ class ScraperCoordinator:
                         message=error_msg,
                         details=f"Failed after {self.max_retries} attempts",
                     )
-                    self.errors.append(error)
                     self.logger.error(f"Timeout scraping {brewery.name}: {error_msg}")
-                    return []
-                else:
-                    wait_time = 2**attempt  # Exponential backoff
-                    self.logger.warning(
-                        f"Timeout scraping {brewery.name}, retrying in {wait_time}s..."
-                    )
-                    await asyncio.sleep(wait_time)
+                    return [], error
+                wait_time = 2**attempt  # Exponential backoff
+                self.logger.warning(
+                    f"Timeout scraping {brewery.name}, retrying in {wait_time}s..."
+                )
+                await asyncio.sleep(wait_time)
 
             except aiohttp.ClientError as e:
                 error_msg = f"Network error: {str(e)}"
@@ -145,32 +156,27 @@ class ScraperCoordinator:
                         message=error_msg,
                         details=f"Failed after {self.max_retries} attempts",
                     )
-                    self.errors.append(error)
                     self.logger.error(
                         f"Network error scraping {brewery.name}: {error_msg}"
                     )
-                    return []
-                else:
-                    wait_time = 2**attempt
-                    self.logger.warning(
-                        f"Network error scraping {brewery.name}, retrying in {wait_time}s..."
-                    )
-                    await asyncio.sleep(wait_time)
+                    return [], error
+                wait_time = 2**attempt
+                self.logger.warning(
+                    f"Network error scraping {brewery.name}, retrying in {wait_time}s..."
+                )
+                await asyncio.sleep(wait_time)
 
             except ValueError as e:
-                # Parser or configuration error - don't retry
                 error = ScrapingError(
                     brewery=brewery,
                     error_type="Parser Error",
                     message=f"Parsing failed: {str(e)}",
                     details=str(e),
                 )
-                self.errors.append(error)
                 self.logger.error(f"Parser error for {brewery.name}: {str(e)}")
-                return []
+                return [], error
 
             except Exception as e:
-                # Unknown error - still retry for potential network issues
                 error_msg = f"Unexpected error: {str(e)}"
                 if attempt == self.max_retries - 1:
                     error = ScrapingError(
@@ -179,19 +185,17 @@ class ScraperCoordinator:
                         message=error_msg,
                         details=str(e),
                     )
-                    self.errors.append(error)
                     self.logger.error(
                         f"Unknown error scraping {brewery.name}: {error_msg}"
                     )
-                    return []
-                else:
-                    wait_time = 2**attempt
-                    self.logger.warning(
-                        f"Unknown error scraping {brewery.name}, retrying in {wait_time}s..."
-                    )
-                    await asyncio.sleep(wait_time)
+                    return [], error
+                wait_time = 2**attempt
+                self.logger.warning(
+                    f"Unknown error scraping {brewery.name}, retrying in {wait_time}s..."
+                )
+                await asyncio.sleep(wait_time)
 
-        return []
+        return [], None
 
     def _filter_and_sort_events(
         self, events: List[FoodTruckEvent]

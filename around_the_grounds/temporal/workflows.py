@@ -1,6 +1,8 @@
 """Workflow definitions for Temporal."""
 
+import asyncio
 from datetime import timedelta
+from typing import Any, Dict, List
 
 from temporalio import workflow
 
@@ -31,12 +33,42 @@ class FoodTruckWorkflow:
                 f"Loaded {len(brewery_configs)} brewery configurations"
             )
 
-            # Step 2: Scrape food truck data
-            events, errors = await workflow.execute_activity(
-                scrape_activities.scrape_food_trucks,
-                brewery_configs,
-                schedule_to_close_timeout=timedelta(minutes=5),
+            # Step 2: Scrape food truck data across breweries in parallel batches
+            max_parallel = max(1, params.max_parallel_scrapes)
+            workflow.logger.info(
+                f"Scraping breweries with max_parallel_scrapes={max_parallel}"
             )
+
+            all_events: List[Dict[str, Any]] = []
+            all_errors: List[Dict[str, str]] = []
+
+            if brewery_configs:
+                for start in range(0, len(brewery_configs), max_parallel):
+                    batch = brewery_configs[start : start + max_parallel]
+                    workflow.logger.info(
+                        f"Launching scrape activities for breweries {start + 1}-"
+                        f"{start + len(batch)} of {len(brewery_configs)}"
+                    )
+
+                    batch_results = await asyncio.gather(
+                        *[
+                            workflow.execute_activity(
+                                scrape_activities.scrape_single_brewery,
+                                config,
+                                schedule_to_close_timeout=timedelta(minutes=2),
+                            )
+                            for config in batch
+                        ]
+                    )
+
+                    for result in batch_results:
+                        all_events.extend(result.get("events", []))
+                        error = result.get("error")
+                        if error:
+                            all_errors.append(error)
+
+            events = all_events
+            errors = all_errors
 
             workflow.logger.info(
                 f"Scraped {len(events)} events with {len(errors)} errors"

@@ -22,10 +22,35 @@ from around_the_grounds.main import (
 )
 from around_the_grounds.models import Brewery, FoodTruckEvent
 from around_the_grounds.scrapers import ScraperCoordinator
+from around_the_grounds.scrapers.coordinator import ScrapingError
 
 
 class ScrapeActivities:
     """Activities for scraping food truck data."""
+
+    @staticmethod
+    def _serialize_event(event: FoodTruckEvent) -> Dict[str, Any]:
+        """Convert an event to a JSON-serializable structure."""
+        return {
+            "brewery_key": event.brewery_key,
+            "brewery_name": event.brewery_name,
+            "food_truck_name": event.food_truck_name,
+            "date": event.date.isoformat(),
+            "start_time": event.start_time.isoformat() if event.start_time else None,
+            "end_time": event.end_time.isoformat() if event.end_time else None,
+            "description": event.description,
+            "ai_generated_name": event.ai_generated_name,
+        }
+
+    @staticmethod
+    def _serialize_error(error: Optional[ScrapingError]) -> Optional[Dict[str, str]]:
+        if not error:
+            return None
+        return {
+            "brewery_name": error.brewery.name,
+            "message": error.message,
+            "user_message": error.to_user_message(),
+        }
 
     @activity.defn
     async def test_connectivity(self) -> str:
@@ -68,33 +93,36 @@ class ScrapeActivities:
         events = await coordinator.scrape_all(breweries)
         errors = coordinator.get_errors()
 
-        # Convert to serializable format
-        serialized_events = [
-            {
-                "brewery_key": event.brewery_key,
-                "brewery_name": event.brewery_name,
-                "food_truck_name": event.food_truck_name,
-                "date": event.date.isoformat(),
-                "start_time": (
-                    event.start_time.isoformat() if event.start_time else None
-                ),
-                "end_time": event.end_time.isoformat() if event.end_time else None,
-                "description": event.description,
-                "ai_generated_name": event.ai_generated_name,
-            }
-            for event in events
-        ]
-
+        serialized_events = [self._serialize_event(event) for event in events]
         serialized_errors = [
-            {
-                "brewery_name": error.brewery.name,
-                "message": error.message,
-                "user_message": error.to_user_message(),
-            }
-            for error in errors
+            serialized_error
+            for serialized_error in (
+                self._serialize_error(error) for error in errors
+            )
+            if serialized_error
         ]
 
         return serialized_events, serialized_errors
+
+    @activity.defn
+    async def scrape_single_brewery(
+        self, brewery_config: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Scrape one brewery and return serialized events and optional error."""
+        brewery = Brewery(
+            key=brewery_config["key"],
+            name=brewery_config["name"],
+            url=brewery_config["url"],
+            parser_config=brewery_config["parser_config"],
+        )
+
+        coordinator = ScraperCoordinator(max_concurrent=1)
+        events, error = await coordinator.scrape_one(brewery)
+
+        return {
+            "events": [self._serialize_event(event) for event in events],
+            "error": self._serialize_error(error),
+        }
 
 
 class DeploymentActivities:

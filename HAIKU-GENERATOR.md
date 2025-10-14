@@ -64,6 +64,25 @@ Haiku generation is automatic when:
 
 If API key is not set or API fails, system gracefully continues without haikus.
 
+### Prompt Template
+
+The haiku prompt text now lives in an external template file so it can be tailored for other cities, venues, or languages without code changes.
+
+- **Default location**: `around_the_grounds/config/haiku_prompt.txt`
+- **Override via environment**: set `HAIKU_PROMPT_FILE=/path/to/custom_prompt.txt`
+- **Override in code**: pass `HaikuGenerator(prompt_path="/path/to/custom_prompt.txt")`
+
+The template uses Python `{format}` placeholders. The following fields are available:
+
+| Placeholder | Description |
+|-------------|-------------|
+| `{date}` | Human-friendly date string (`March 15, 2025 (Saturday)`) |
+| `{truck_name}` | Food truck selected for featured focus |
+| `{brewery_name}` | Brewery hosting the featured truck |
+| `{events_summary}` | Bullet list of all trucks scheduled for the day |
+
+If the custom template is missing a placeholder, the generator falls back to the built-in default to avoid runtime failures. Keep the emoji formatting rules or adjust them to match your brand voice.
+
 ## Usage
 
 ### In CLI Application

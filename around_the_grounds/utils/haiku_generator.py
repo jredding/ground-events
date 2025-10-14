@@ -2,24 +2,76 @@
 
 import asyncio
 import logging
+import os
 import random
 from datetime import datetime
-from typing import List, Optional
+from pathlib import Path
+from typing import List, Optional, Union
 
 import anthropic
 
 from ..models import FoodTruckEvent
 
 
+DEFAULT_PROMPT_PATH = (
+    Path(__file__).resolve().parent.parent / "config" / "haiku_prompt.txt"
+)
+
+DEFAULT_PROMPT_TEMPLATE = """Today's date is: {date}
+
+Today's featured food truck: {truck_name} at {brewery_name}
+
+Today's full lineup:
+{events_summary}
+
+---
+
+Create a haiku (5-7-5 syllable structure) that captures the essence of today's food truck scene in Seattle's Ballard neighborhood. Your haiku should:
+
+1. Reflect the current season and time of year based on today's date
+2. Feature the specific food truck ({truck_name}) and brewery ({brewery_name}) mentioned above
+3. Evoke the atmosphere of gathering at local breweries and food spots
+4. Balance concrete sensory details with seasonal imagery
+
+The haiku should feel authentic to the Pacific Northwest autumn/winter/spring/summer experience and celebrate the diversity of street food culture. Avoid being overly literal - aim for evocative, poetic language that honors the traditional haiku form.
+
+CRITICAL FORMATTING REQUIREMENTS:
+- The haiku MUST be exactly 3 lines of text
+- Each line must contain actual words, not just emojis
+- The haiku MUST start with an emoji at the BEGINNING of the first line AND end with an emoji at the END of the third line (inline with the text)
+- Do NOT put emojis on their own separate lines
+- Good examples:
+
+🍂 Autumn mist rolls in—
+Plaza Garcia's warmth glows
+at Obec's wood door 🍺
+
+☀️ Summer sun beams bright
+Where Ya At Matt hangs at Stoup,
+Hops drank with good eats 🍺
+
+Return only the haiku with inline emoji, nothing else."""
+
+
 class HaikuGenerator:
     """Generates haikus about food truck events using Claude Sonnet 4.5."""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        prompt_path: Optional[Union[str, Path]] = None,
+        prompt_template: Optional[str] = None,
+    ):
         """Initialize haiku generator with Anthropic API client."""
         self.client = anthropic.Anthropic(
             api_key=api_key
         )  # Uses ANTHROPIC_API_KEY env var if None
         self.logger = logging.getLogger(__name__)
+        self.prompt_template = (
+            prompt_template
+            if prompt_template
+            else self._load_prompt_template(prompt_path)
+        )
 
     async def generate_haiku(
         self, date: datetime, events: List[FoodTruckEvent], max_retries: int = 2
@@ -86,38 +138,13 @@ class HaikuGenerator:
                 f"Selected truck for haiku: {truck_name} at {brewery_name}"
             )
 
-            # Build prompt
-            prompt = f"""Today's date is: {date_str}
-
-Today's featured food truck: {truck_name} at {brewery_name}
-
----
-
-Create a haiku (5-7-5 syllable structure) that captures the essence of today's food truck scene in Seattle's Ballard neighborhood. Your haiku should:
-
-1. Reflect the current season and time of year based on today's date
-2. Feature the specific food truck ({truck_name}) and brewery ({brewery_name}) mentioned above
-3. Evoke the atmosphere of gathering at local breweries and food spots
-4. Balance concrete sensory details with seasonal imagery
-
-The haiku should feel authentic to the Pacific Northwest autumn/winter/spring/summer experience and celebrate the diversity of street food culture. Avoid being overly literal - aim for evocative, poetic language that honors the traditional haiku form.
-
-CRITICAL FORMATTING REQUIREMENTS:
-- The haiku MUST be exactly 3 lines of text
-- Each line must contain actual words, not just emojis
-- The haiku MUST start with an emoji at the BEGINNING of the first line AND end with an emoji at the END of the third line (inline with the text)
-- Do NOT put emojis on their own separate lines
-- Good examples:
-
-🍂 Autumn mist rolls in—
-Plaza Garcia's warmth glows
-at Obec's wood door 🍺
-
-☀️ Summer sun beams bright
-Where Ya At Matt hangs at Stoup,
-Hops drank with good eats 🍺
-
-Return only the haiku with inline emoji, nothing else."""
+            # Build prompt from template
+            prompt = self._build_prompt(
+                date_str=date_str,
+                truck_name=truck_name,
+                brewery_name=brewery_name,
+                events=events,
+            )
 
             message = self.client.messages.create(
                 model="claude-sonnet-4-20250514",
@@ -170,3 +197,82 @@ Return only the haiku with inline emoji, nothing else."""
 
         # Take first 3 text lines
         return "\n".join(text_lines[:3])
+
+    def _load_prompt_template(
+        self, prompt_path: Optional[Union[str, Path]] = None
+    ) -> str:
+        """Load the haiku prompt template with graceful fallbacks."""
+        candidate_paths = []
+
+        if prompt_path:
+            candidate_paths.append(Path(prompt_path))
+
+        env_path = os.getenv("HAIKU_PROMPT_FILE")
+        if env_path:
+            candidate_paths.append(Path(env_path))
+
+        candidate_paths.append(DEFAULT_PROMPT_PATH)
+
+        for path in candidate_paths:
+            try:
+                if path.exists():
+                    prompt = path.read_text(encoding="utf-8").strip()
+                    if prompt:
+                        self.logger.debug(
+                            "Loaded haiku prompt template from %s", path.as_posix()
+                        )
+                        return prompt
+                    self.logger.warning(
+                        "Haiku prompt template at %s is empty; trying next option",
+                        path.as_posix(),
+                    )
+            except OSError as exc:
+                self.logger.warning(
+                    "Failed to read haiku prompt template at %s: %s",
+                    path.as_posix(),
+                    exc,
+                )
+
+        self.logger.debug("Using built-in haiku prompt template fallback")
+        return DEFAULT_PROMPT_TEMPLATE
+
+    def _build_prompt(
+        self,
+        *,
+        date_str: str,
+        truck_name: str,
+        brewery_name: str,
+        events: List[FoodTruckEvent],
+    ) -> str:
+        """Render the configured prompt template with context."""
+        events_summary = "\n".join(
+            f"- {event.food_truck_name} at {event.brewery_name}" for event in events
+        )
+
+        template = self.prompt_template
+
+        try:
+            return template.format(
+                date=date_str,
+                truck_name=truck_name,
+                brewery_name=brewery_name,
+                events_summary=events_summary,
+            )
+        except KeyError as exc:
+            self.logger.warning(
+                "Prompt template missing placeholder %s; falling back to default",
+                exc,
+            )
+        except ValueError as exc:
+            # e.g. unmatched braces
+            self.logger.warning(
+                "Prompt template formatting failed (%s); falling back to default",
+                exc,
+            )
+
+        return DEFAULT_PROMPT_TEMPLATE.format(
+            date=date_str,
+            truck_name=truck_name,
+            brewery_name=brewery_name,
+            events_summary=events_summary,
+        )

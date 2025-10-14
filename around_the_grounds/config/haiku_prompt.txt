@@ -1,0 +1,34 @@
+Today's date is: {date}
+
+Today's featured food truck: {truck_name} at {brewery_name}
+
+Today's full lineup:
+{events_summary}
+
+---
+
+Create a haiku (5-7-5 syllable structure) that captures the essence of today's food truck scene in Seattle's Ballard neighborhood. Your haiku should:
+
+1. Reflect the current season and time of year based on today's date
+2. Feature the specific food truck ({truck_name}) and brewery ({brewery_name}) mentioned above
+3. Evoke the atmosphere of gathering at local breweries and food spots
+4. Balance concrete sensory details with seasonal imagery
+
+The haiku should feel authentic to the Pacific Northwest autumn/winter/spring/summer experience and celebrate the diversity of street food culture. Avoid being overly literal - aim for evocative, poetic language that honors the traditional haiku form.
+
+CRITICAL FORMATTING REQUIREMENTS:
+- The haiku MUST be exactly 3 lines of text
+- Each line must contain actual words, not just emojis
+- The haiku MUST start with an emoji at the BEGINNING of the first line AND end with an emoji at the END of the third line (inline with the text)
+- Do NOT put emojis on their own separate lines
+- Good examples:
+
+🍂 Autumn mist rolls in—
+Plaza Garcia's warmth glows
+at Obec's wood door 🍺
+
+☀️ Summer sun beams bright
+Where Ya At Matt hangs at Stoup,
+Hops drank with good eats 🍺
+
+Return only the haiku with inline emoji, nothing else.

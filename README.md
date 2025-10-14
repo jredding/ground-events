@@ -236,6 +236,13 @@ TEMPORAL_ADDRESS=your-namespace.acct.tmprl.cloud:7233
 TEMPORAL_API_KEY=your-temporal-api-key
 ```
 
+### Haiku Prompt Template
+- Default prompt: `around_the_grounds/config/haiku_prompt.txt`
+- Override via env var: `HAIKU_PROMPT_FILE=/path/to/custom_prompt.txt`
+- Template placeholders: `{date}`, `{truck_name}`, `{brewery_name}`, `{events_summary}`
+
+Copy the default file and tweak the location descriptions, tone, or formatting to suit your own food truck scene. Missing placeholders trigger a safe fallback to the built-in prompt.
+
 ### Custom Repository
 ```bash
 # Deploy to specific repository

@@ -8,11 +8,12 @@ Around the Grounds is a robust Python CLI tool for tracking food truck schedules
 - **Web interface** with mobile-responsive design and automatic deployment to Vercel
 - **Async web scraping** with concurrent processing of multiple brewery websites
 - **AI vision analysis** using Claude Vision API to extract vendor names from food truck logos/images
+- **AI haiku generation** using Claude Sonnet to create contextual, poetic descriptions of daily food truck scenes
 - **Auto-deployment** with git integration for seamless web updates
 - **Extensible parser system** with custom parsers for different brewery website structures
 - **Comprehensive error handling** with retry logic, isolation, and graceful degradation
 - **Temporal workflow integration** with cloud deployment support (local, Temporal Cloud, custom servers)
-- **Extensive test suite** with 196 tests covering unit, integration, vision analysis, and error scenarios
+- **Extensive test suite** with 196 tests covering unit, integration, vision analysis, haiku generation, and error scenarios
 - **Modern Python tooling** with uv for dependency management and packaging
 
 ## Development Commands
@@ -30,10 +31,10 @@ uv run around-the-grounds --config /path/to/config.json  # Use custom config (~6
 uv run around-the-grounds --preview    # Generate local preview files (~60s)
 uv run around-the-grounds --deploy     # Run and deploy to web (~90s total)
 
-# With AI vision analysis (optional)
+# With AI features enabled (vision analysis + haiku generation)
 export ANTHROPIC_API_KEY="your-api-key"
-uv run around-the-grounds --verbose    # Run with vision analysis enabled (~60-90s)
-uv run around-the-grounds --deploy     # Run with vision analysis and deploy to web (~90-60s)
+uv run around-the-grounds --verbose    # Run with AI features enabled (~60-90s)
+uv run around-the-grounds --deploy     # Run with AI features and deploy to web (~90-60s)
 ```
 
 **⏱️ Execution Times:** CLI operations typically take 60-90 seconds to scrape all brewery websites concurrently. Add extra time for vision analysis and git operations when using `--deploy`.
@@ -87,43 +88,10 @@ const puppeteer = require('puppeteer');
 
 This allows you to test web interface changes, verify data accuracy, and debug issues before deploying to production.
 
-### Client-Side Testing Strategy
-
-The web interface performs critical JavaScript processing that must be tested beyond just raw `data.json`:
-
-**JavaScript Processing Verified:**
-- **Date grouping and sorting**: `eventsByDate` object creation
-- **Timezone formatting**: `toLocaleDateString()` browser-specific rendering  
-- **Emoji filtering**: Unicode removal from vendor names
-- **DOM generation**: HTML injection and element creation
-- **Event counting**: Final rendered item validation
-
-**Why Headless Browser Testing Matters:**
-- **Timezone bugs**: Server time vs. browser time differences (like the 5pm Sunday issue)
-- **Locale-specific rendering**: Date formats vary by user's browser settings
-- **JavaScript errors**: Runtime failures not caught by static testing
-- **CSS rendering issues**: Missing elements due to styling problems
-- **Real user experience**: Tests the complete data → display pipeline
-
-**Puppeteer Testing Pattern:**
-```javascript
-// Wait for async data loading
-await page.waitForSelector('.day-section', {timeout: 5000});
-
-// Extract rendered content
-const dayHeaders = await page.$$eval('.day-header', els => els.map(el => el.textContent));
-const eventCount = await page.$$eval('.truck-item', els => els.length);
-
-// Validate client-side processing
-console.log('✅ Rendered days:', dayHeaders.slice(0,2).join(', '));
-console.log('✅ Rendered events:', eventCount);
-```
-
-This approach catches issues that raw API testing misses and ensures users see the correct data.
 
 ### Web Deployment
 
-**IMPORTANT**: Web deployment requires GitHub App authentication setup (see GitHub App Configuration section below).
+**IMPORTANT**: Web deployment requires GitHub App authentication setup. See [./DEPLOYMENT.MD] for configuration details.
 
 ```bash
 # Deploy fresh data to website (full workflow)
@@ -149,222 +117,11 @@ uv run around-the-grounds --deploy
 uv run around-the-grounds --deploy --verbose  # Recommended for scheduled runs
 ```
 
-### GitHub App Configuration
-
-Web deployment uses GitHub App authentication for secure repository access:
-
-#### 1. Create GitHub App
-1. Go to https://github.com/settings/apps
-2. Click "New GitHub App"
-3. Configure:
-   - **App name**: "Around the Grounds Deployer" (or similar)
-   - **Homepage URL**: Your repository URL
-   - **Repository permissions**:
-     - Contents: Read & Write
-     - Metadata: Read
-   - **Where can this GitHub App be installed?**: Only on this account
-4. **Generate private key** and download the `.pem` file
-5. Note the **App ID** from the app settings page
-
-#### 2. Install App on Repository
-1. Go to your GitHub App settings
-2. Click "Install App" 
-3. Select your target repository (e.g., `ballard-food-trucks`)
-4. The installation ID will be automatically retrieved by the system
-
-#### 3. Configure Environment Variables
-```bash
-# Copy template
-cp .env.example .env
-
-# Add GitHub App credentials to .env:
-GITHUB_APP_ID=123456
-GITHUB_CLIENT_ID=your-github-client-id
-GITHUB_APP_PRIVATE_KEY_B64=$(base64 -i path/to/your-app.private-key.pem)
-GIT_REPOSITORY_URL=https://github.com/username/ballard-food-trucks.git
-
-# Optional: AI vision analysis
-ANTHROPIC_API_KEY=your-anthropic-api-key
-```
-
-**Note:** The system includes working defaults for `GITHUB_APP_ID` and `GITHUB_CLIENT_ID`. You only need to override these if you're using a different GitHub App. The installation ID is automatically retrieved via the GitHub API - you don't need to configure it manually.
-
-#### 4. Target Repository Setup
-
-The system pushes a complete static website to a **separate target repository** which is then deployed by platforms like Vercel:
-
-**Two-Repository Architecture**:
-- **Source repo** (this one): Contains scraping code, runs workers, web templates
-- **Target repo** (e.g., `ballard-food-trucks`): Receives complete website, served as static site
-
-**Configuration Options**:
-
-**Default Repository**: `steveandroulakis/ballard-food-trucks`
-```bash
-# Uses default repository from settings
-uv run around-the-grounds --deploy
-```
-
-**Custom Repository via CLI**:
-```bash
-uv run around-the-grounds --deploy --git-repo https://github.com/username/custom-repo.git
-```
-
-**Custom Repository via Environment**:
-```bash
-export GIT_REPOSITORY_URL="https://github.com/username/custom-repo.git"
-uv run around-the-grounds --deploy
-```
-
-**Configuration Precedence**:
-1. CLI argument (`--git-repo`)
-2. Environment variable (`GIT_REPOSITORY_URL`)
-3. Default (`steveandroulakis/ballard-food-trucks`)
-
-#### 5. Deployment Workflow
-
-When you run `--deploy`, the system:
-1. **Scrapes** all brewery websites for fresh data
-2. **Copies** web templates from `public_template/` to target repository
-3. **Generates** web-friendly JSON data in target repository
-4. **Authenticates** using GitHub App credentials
-5. **Commits** and pushes complete website to target repository
-6. **Triggers** automatic deployment (Vercel/Netlify/etc.)
-7. **Website** updates live within minutes
-
-### Temporal Workflow Execution
-
-The system supports multiple Temporal deployment scenarios through environment-based configuration:
-
-#### Local Development (Default)
-```bash
-# No configuration needed - connects to localhost:7233
-
-# Method 1: Run worker in background (for testing)
-# Start Temporal worker (run in separate terminal - runs continuously, not good for agents)
-uv run python -m around_the_grounds.temporal.worker
-
-# Method 2: Test with timeout (recommended for development and agents)
-# Start workflow first, then run worker with timeout to process it
-uv run python -m around_the_grounds.temporal.starter --deploy --verbose &
-timeout 60s uv run python -m around_the_grounds.temporal.worker
-
-# Execute workflow manually
-uv run python -m around_the_grounds.temporal.starter --deploy --verbose
-
-# Execute workflow with custom configuration
-uv run python -m around_the_grounds.temporal.starter --config /path/to/config.json --deploy
-
-# Execute workflow with custom ID for tracking
-uv run python -m around_the_grounds.temporal.starter --workflow-id daily-update-2025 --deploy
-```
-
-**Note:** The Temporal worker runs as a foreground service and will not exit until manually stopped (Ctrl+C). For testing purposes, use `timeout 60s` to limit worker execution time, allowing enough time for the full scraping and deployment workflow (~90-60s).
-
-#### Temporal Cloud Deployment
-```bash
-# Set environment variables for Temporal Cloud
-export TEMPORAL_ADDRESS="your-namespace.acct.tmprl.cloud:7233"
-export TEMPORAL_NAMESPACE="your-namespace"
-export TEMPORAL_API_KEY="your-api-key"
-
-# Start worker - automatically connects to Temporal Cloud (runs continuously)
-uv run python -m around_the_grounds.temporal.worker
-
-# Execute workflows - uses cloud configuration
-uv run python -m around_the_grounds.temporal.starter --deploy --verbose
-```
-
-### Production Deployment via CI/CD
-
-For automated production updates using Docker and Watchtower:
-
-```bash
-# 1. GitHub Actions builds and pushes to Docker Hub (takes ~4 minutes)
-# 2. Watchtower runs every 5 minutes to pull latest image
-# 3. Monitor worker container:
-ssh admin@192.168.0.20
-docker ps -a -f "ancestor=steveandroulakis/around-the-grounds-worker:latest"
-docker logs -f around-the-grounds-worker
-
-# 4. Trigger schedule via Temporal UI and watch execution
-```
-
-**CI/CD Workflow:**
-1. **Code changes** → GitHub Actions → Docker Hub (4 minutes)
-2. **Watchtower** detects new image → pulls and restarts worker (every 5 minutes)
-3. **Temporal schedules** trigger workflows → worker executes deployment
-4. **Data deploys** automatically to target repository → live website updates
-
-**Production Monitoring:**
-- Monitor Docker containers on production server
-- Check worker logs for execution status
-- Trigger immediate updates via Temporal UI
-- Verify deployment success on live website
-
-#### Custom Server with mTLS
-```bash
-# Set environment variables for custom server with certificate authentication
-export TEMPORAL_ADDRESS="your-server.example.com:7233"
-export TEMPORAL_NAMESPACE="production"
-export TEMPORAL_TLS_CERT="/path/to/cert.pem"
-export TEMPORAL_TLS_KEY="/path/to/key.pem"
-
-# Start worker and execute workflows
-uv run python -m around_the_grounds.temporal.worker
-uv run python -m around_the_grounds.temporal.starter --deploy
-```
-
-#### Environment Configuration
-Create a `.env` file (based on `.env.example`) for persistent configuration:
-```bash
-# Copy the template
-cp .env.example .env
-
-# Edit with your Temporal configuration
-# TEMPORAL_ADDRESS=your-namespace.acct.tmprl.cloud:7233
-# TEMPORAL_API_KEY=your-api-key
-# etc.
-```
-
-#### Legacy CLI Arguments (Deprecated)
-```bash
-# CLI arguments still work but show deprecation warnings
-uv run python -m around_the_grounds.temporal.starter --temporal-address production:7233 --deploy
-# Warning: --temporal-address is deprecated, use TEMPORAL_ADDRESS environment variable
-```
+### Deployment
+See [./DEPLOYMENT.MD]
 
 ### Temporal Schedule Management
-
-The system includes comprehensive schedule management for automated workflow execution:
-
-#### Creating and Managing Schedules
-```bash
-# Create a schedule that runs every 30 minutes
-uv run python -m around_the_grounds.temporal.schedule_manager create --schedule-id daily-scrape --interval 30
-
-# Create a schedule with custom config and start paused
-uv run python -m around_the_grounds.temporal.schedule_manager create --schedule-id custom-scrape --interval 60 --config /path/to/config.json --paused
-
-# List all schedules
-uv run python -m around_the_grounds.temporal.schedule_manager list
-
-# Describe a specific schedule
-uv run python -m around_the_grounds.temporal.schedule_manager describe --schedule-id daily-scrape
-
-# Pause/unpause schedules
-uv run python -m around_the_grounds.temporal.schedule_manager pause --schedule-id daily-scrape --note "Maintenance window"
-uv run python -m around_the_grounds.temporal.schedule_manager unpause --schedule-id daily-scrape
-
-# Trigger immediate execution
-uv run python -m around_the_grounds.temporal.schedule_manager trigger --schedule-id daily-scrape
-
-# Update schedule interval
-uv run python -m around_the_grounds.temporal.schedule_manager update --schedule-id daily-scrape --interval 45
-
-# Delete a schedule
-uv run python -m around_the_grounds.temporal.schedule_manager delete --schedule-id daily-scrape
-```
+See [./SCHEDULES.md]
 
 #### Schedule Features
 - **Configurable intervals**: Any number of minutes (5, 30, 60, 120, etc.)
@@ -432,7 +189,8 @@ around_the_grounds/
 │   └── README.md               # Temporal-specific documentation
 ├── utils/
 │   ├── date_utils.py           # Date/time utilities with validation
-│   └── vision_analyzer.py      # AI vision analysis for vendor identification
+│   ├── vision_analyzer.py      # AI vision analysis for vendor identification
+│   └── haiku_generator.py      # AI haiku generation for food truck scenes
 └── main.py                     # CLI entry point with web deployment support
 
 public_template/                # Web interface templates (copied to target repo)
@@ -448,10 +206,12 @@ tests/                          # Comprehensive test suite
 │   ├── html/                   # Real HTML samples from brewery websites
 │   └── config/                 # Test configurations
 ├── unit/                       # Unit tests for individual components
-│   └── test_vision_analyzer.py # Vision analysis component tests
+│   ├── test_vision_analyzer.py # Vision analysis component tests
+│   └── test_haiku_generator.py # Haiku generation component tests
 ├── parsers/                    # Parser-specific tests
 ├── integration/                # End-to-end integration tests
-│   └── test_vision_integration.py  # Vision analysis integration tests
+│   ├── test_vision_integration.py  # Vision analysis integration tests
+│   └── test_haiku_integration.py   # Haiku generation integration tests
 └── test_error_handling.py      # Comprehensive error scenario tests
 ```
 
@@ -473,19 +233,19 @@ tests/                          # Comprehensive test suite
   - `FoodTruckStarter`: CLI client for manual workflow execution
   - `ScheduleManager`: Comprehensive schedule management with configurable intervals and full lifecycle operations
 - **Config**: JSON-based configuration with validation and error reporting
-- **Utils**: Date/time utilities with comprehensive parsing and validation, plus AI vision analysis
+- **Utils**: Date/time utilities, AI vision analysis for vendor identification, AI haiku generation for daily scenes
 - **Web Interface**: Mobile-responsive HTML/CSS/JS frontend with automatic data fetching
 - **Web Deployment**: Git-based deployment system with Vercel integration for automatic updates
-- **Tests**: 196 tests covering all scenarios including extensive error handling and vision analysis
+- **Tests**: 196 tests covering all scenarios including extensive error handling, vision analysis, and haiku generation
 
 ### Core Dependencies
 
 **Production:**
 - `aiohttp` - Async HTTP client for web scraping with timeout handling
 - `beautifulsoup4` - HTML parsing with error tolerance
-- `lxml` - Fast XML/HTML parser backend  
+- `lxml` - Fast XML/HTML parser backend
 - `requests` - HTTP library (legacy support)
-- `anthropic` - Claude Vision API for AI-powered image analysis
+- `anthropic` - Claude API for AI-powered image analysis and haiku generation
 - `temporalio` - Temporal Python SDK for workflow orchestration
 
 **Development & Testing:**
@@ -500,184 +260,25 @@ The CLI is configured in `pyproject.toml` with entry point `around-the-grounds =
 
 ## Adding New Breweries
 
-To add a new brewery with proper error handling:
+See [./ADDING-BREWERIES.md]
 
-1. **Create Parser Class** in `parsers/` inheriting from `BaseParser`:
-```python
-from .base import BaseParser
-from ..models import FoodTruckEvent
-from typing import List
-import aiohttp
+## Haiku Generator
 
-class NewBreweryParser(BaseParser):
-    async def parse(self, session: aiohttp.ClientSession) -> List[FoodTruckEvent]:
-        try:
-            soup = await self.fetch_page(session, self.brewery.url)
-            events = []
-            
-            # Extract events from HTML with error handling
-            # Use self.logger for debugging
-            # Use self.validate_event() for data validation
-            
-            # Filter and validate all events before returning
-            valid_events = self.filter_valid_events(events)
-            self.logger.info(f"Parsed {len(valid_events)} valid events")
-            return valid_events
-            
-        except Exception as e:
-            self.logger.error(f"Error parsing {self.brewery.name}: {str(e)}")
-            raise ValueError(f"Failed to parse brewery website: {str(e)}")
-```
+The system includes AI-powered haiku generation that creates contextual, poetic descriptions of daily food truck scenes. Haikus reflect the current season, feature specific food trucks and breweries, and follow traditional 5-7-5 syllable structure.
 
-2. **Register Parser** in `parsers/registry.py`:
-```python
-from .new_brewery import NewBreweryParser
+See [./HAIKU-GENERATOR.md] for detailed documentation on configuration, usage, and implementation.
 
-class ParserRegistry:
-    _parsers: Dict[str, Type[BaseParser]] = {
-        'new-brewery-key': NewBreweryParser,
-        # ... existing parsers
-    }
-```
+## AI Vision Analysis
 
-3. **Add Configuration** to `config/breweries.json`:
-```json
-{
-  "key": "new-brewery-key",
-  "name": "New Brewery Name", 
-  "url": "https://newbrewery.com/food-trucks",
-  "parser_config": {
-    "selectors": {
-      "container": ".food-truck-container",
-      "date": ".date-element",
-      "time": ".time-element"
-    }
-  }
-}
-```
+The system includes AI-powered vision analysis to extract food truck vendor names from logos and images when text-based methods fail. The analyzer uses Claude Vision API as a fallback, with retry logic and graceful degradation.
 
-4. **Write Tests** in `tests/parsers/test_new_brewery.py`:
-- Test successful parsing with mock HTML
-- Test error scenarios (network, parsing, validation)
-- Test with real HTML fixtures if available
-- Mock vision analysis if your parser uses it
-
-## AI Vision Analysis Integration
-
-The system includes AI-powered vision analysis to extract food truck vendor names from logos and images when text-based methods fail.
-
-### How It Works
-
-1. **Text Extraction First**: All parsers attempt text-based vendor name extraction using existing methods
-2. **Vision Fallback**: When text extraction fails, the system automatically analyzes event images using Claude Vision API
-3. **Vendor Name Extraction**: The AI identifies business names from logos, signs, and food truck images
-4. **Name Cleaning**: Extracted names are cleaned to remove common suffixes like "Food Truck", "Kitchen", etc.
-5. **Graceful Degradation**: If vision analysis fails, the system falls back to "TBD"
-
-### Configuration
-
-Vision analysis is controlled by environment variables:
-
-```bash
-export ANTHROPIC_API_KEY="your-api-key"          # Required for vision analysis
-export VISION_ANALYSIS_ENABLED="true"            # Enable/disable (default: true)
-export VISION_MAX_RETRIES="2"                    # Max retry attempts (default: 2)
-export VISION_TIMEOUT="30"                       # API timeout in seconds (default: 30)
-```
-
-### Usage in Parsers
-
-The Urban Family parser demonstrates integration:
-
-```python
-from ..utils.vision_analyzer import VisionAnalyzer
-
-class UrbanFamilyParser(BaseParser):
-    def __init__(self, brewery):
-        super().__init__(brewery)
-        self._vision_analyzer = None
-    
-    @property
-    def vision_analyzer(self):
-        """Lazy initialization of vision analyzer."""
-        if self._vision_analyzer is None:
-            self._vision_analyzer = VisionAnalyzer()
-        return self._vision_analyzer
-    
-    def _extract_food_truck_name(self, item: Dict[str, Any]) -> Optional[str]:
-        # Try text-based extraction first
-        name = self._extract_name_from_text_fields(item)
-        if name:
-            return name
-        
-        # Fall back to vision analysis if image available
-        if 'eventImage' in item and item['eventImage']:
-            try:
-                vision_name = asyncio.run(
-                    self.vision_analyzer.analyze_food_truck_image(item['eventImage'])
-                )
-                if vision_name:
-                    return vision_name
-            except Exception as e:
-                self.logger.debug(f"Vision analysis failed: {str(e)}")
-        
-        return None
-```
-
-### Testing Vision Analysis
-
-Always mock vision analysis in tests:
-
-```python
-@patch('around_the_grounds.utils.vision_analyzer.VisionAnalyzer.analyze_food_truck_image')
-async def test_parser_with_vision_fallback(self, mock_vision, parser):
-    mock_vision.return_value = "Georgia's"
-    
-    test_item = {
-        "eventTitle": "FOOD TRUCK",
-        "eventImage": "https://example.com/logo.jpg"
-    }
-    
-    result = parser._extract_food_truck_name(test_item)
-    assert result == "Georgia's"
-    mock_vision.assert_called_once_with("https://example.com/logo.jpg")
-```
-
-### Real-World Results
-
-The vision analysis successfully extracts vendor names from actual brewery images:
-- "Georgia's" from Georgia's Greek Food Truck logo
-- "TOLU" from Tolu Modern Fijian Cuisine branding
-- "Whateke" from food truck signage
-
-This eliminates many "TBD" entries and provides users with accurate vendor information.
+See [./VISION-ANALYSIS.md] for detailed documentation on configuration, usage, and implementation.
 
 ## Error Handling Strategy
 
-The application implements comprehensive error handling with these principles:
+The application implements comprehensive error handling with error isolation, graceful degradation, and selective retry logic.
 
-### Error Isolation
-- **Individual brewery failures don't affect others** - each brewery is processed independently
-- **Concurrent processing with isolation** - failures are captured per brewery
-- **Graceful degradation** - partial results are returned when some breweries fail
-
-### Error Types & Handling
-- **Network Errors**: Timeouts, DNS failures, SSL issues → Retry with exponential backoff (max 3 attempts)
-- **HTTP Errors**: 404, 500, 403 status codes → Immediate failure with descriptive messages  
-- **Parser Errors**: Invalid HTML, missing elements → Validation and fallback logic
-- **Vision API Errors**: Image analysis failures, API timeouts → Retry with exponential backoff, graceful degradation
-- **Configuration Errors**: Missing parsers, invalid URLs → No retry, immediate failure
-- **Data Validation**: Invalid events → Filtered out, logged for debugging
-
-### Error Reporting
-- **User-friendly output**: Visual indicators (❌) for failures with summary
-- **Detailed logging**: Debug info for troubleshooting with `--verbose` flag
-- **Exit codes**: 0=success, 1=complete failure, 2=partial success
-
-### Retry Logic
-- **Exponential backoff**: 1s, 2s, 4s delays between retries
-- **Selective retrying**: Only network/timeout errors are retried
-- **Error classification**: Parser/config errors fail immediately
+See [./ERROR-HANDLING.md] for the complete error handling strategy guide.
 
 ## Code Standards
 
@@ -692,41 +293,9 @@ The application implements comprehensive error handling with these principles:
 
 ## Testing Strategy
 
-The project includes a comprehensive test suite with 196 tests:
+The project includes a comprehensive test suite with 196 tests covering unit, integration, vision analysis, and error scenarios.
 
-### Test Organization
-```
-tests/
-├── conftest.py                 # Shared fixtures and configuration
-├── fixtures/                   # Test data and HTML samples
-├── unit/                       # Unit tests for individual components
-├── parsers/                    # Parser-specific functionality tests  
-├── integration/                # End-to-end workflow tests
-└── test_error_handling.py      # Comprehensive error scenario tests
-```
-
-### Test Coverage Areas
-- **Models & Utilities**: Data validation, date parsing, registry operations
-- **Parser Functionality**: HTML parsing, data extraction, validation logic  
-- **Vision Analysis**: AI image analysis, vendor name extraction, error handling, retry logic
-- **Error Scenarios**: Network failures, malformed data, timeout handling, API failures
-- **Integration Workflows**: CLI functionality, coordinator behavior, error reporting, vision integration
-- **Real Data Testing**: Uses actual HTML fixtures from brewery websites and real image URLs
-
-### Writing Tests
-- **Use real HTML fixtures** when possible (stored in `tests/fixtures/html/`)
-- **Mock external dependencies** using `aioresponses` for HTTP calls and `@patch` for vision analysis
-- **Test error scenarios** - every component should have error tests (network, API, validation)
-- **Mock vision analysis** - Use `@patch('around_the_grounds.utils.vision_analyzer.VisionAnalyzer.analyze_food_truck_image')` in tests
-- **Follow naming convention**: `test_[component]_[scenario]`
-- **Use async tests** for async code with `@pytest.mark.asyncio`
-
-### Running Tests
-- **Quick feedback**: `uv run python -m pytest tests/unit/`
-- **Parser-specific**: `uv run python -m pytest tests/parsers/`
-- **Vision analysis**: `uv run python -m pytest -k "vision"`
-- **Error scenarios**: `uv run python -m pytest -k "error"`
-- **Integration**: `uv run python -m pytest tests/integration/`
+See [./TESTING.md] for the complete testing strategy and guide.
 
 ## Development Workflow
 
@@ -756,250 +325,13 @@ uv run around-the-grounds --deploy
 
 ## Web Deployment Workflow
 
-When updating or maintaining the web interface:
+See [./WEB-DEPLOYMENT.md] for the complete web deployment workflow guide.
 
-### Development & Testing
-1. **Test locally**: Ensure `uv run around-the-grounds` works correctly
-2. **Test web templates**: Verify `public_template/` contains latest web interface files
-3. **Test deployment**: Run `uv run around-the-grounds --deploy` (copies templates + generates data in target repo)
-4. **Check responsive design**: Test on mobile viewport sizes
+## Type Annotations
 
-### Deployment Process
-1. **Run deployment command**: `uv run around-the-grounds --deploy`
-2. **Verify target repo**: Check that complete website was pushed to target repository
-3. **Monitor Vercel deployment**: Changes should deploy automatically within minutes
-4. **Test live site**: Verify website shows updated data and functions correctly
+The project uses strict type checking with MyPy (`disallow_untyped_defs = true`) and Pylance.
 
-### Scheduled Updates (Temporal)
-```python
-# Recommended Temporal workflow execution
-# The workflow runs the full pipeline: scrape → generate JSON → commit → deploy
-# Execute via worker/starter pattern for reliability and monitoring
-
-# Manual execution
-uv run python -m around_the_grounds.temporal.starter --deploy --verbose
-
-# Scheduled execution (configured via Temporal schedules)
-# Create a schedule that runs every 30 minutes:
-# uv run python -m around_the_grounds.temporal.schedule_manager create --schedule-id daily-scrape --interval 30
-# See around_the_grounds/temporal/README.md for complete schedule configuration
-```
-
-### Troubleshooting Web Deployment
-- **No changes deployed**: Check if data actually changed or templates were updated
-- **Website not updating**: Check Vercel deployment logs and ensure git push to target repo succeeded
-- **Mobile display issues**: Test responsive CSS and ensure viewport meta tag is present in `public_template/`
-- **Data fetching errors**: Verify `data.json` was generated correctly in target repository
-
-## Type Annotation Fixing Strategy
-
-The project uses strict type checking with MyPy (`disallow_untyped_defs = true`) and Pylance. When fixing type annotation issues, follow this systematic approach for maximum efficiency and accuracy.
-
-### Available Diagnostic Tools
-
-#### 1. **MyPy File-Specific Analysis** (Primary Tool)
-```bash
-uv run mypy path/to/specific_file.py --show-error-codes
-```
-
-**Example Output:**
-```bash
-$ uv run mypy tests/unit/test_models.py --show-error-codes
-tests/unit/test_models.py:11: error: Function is missing a return type annotation  [no-untyped-def]
-tests/unit/test_models.py:11: note: Use "-> None" if function does not return a value
-tests/unit/test_models.py:22: error: Function is missing a return type annotation  [no-untyped-def]
-tests/unit/test_models.py:22: note: Use "-> None" if function does not return a value
-Found 7 errors in 1 file (checked 1 source file)
-```
-
-**Best For:** Non-temporal files, detailed error messages, immediate verification
-
-#### 2. **VS Code Diagnostics API** (Excellent for Complex Files)
-```bash
-mcp__ide__getDiagnostics --uri file:///absolute/path/to/file.py
-```
-
-**Example Output:**
-```json
-[{
-  "uri": "file:///Users/.../schedule_manager.py",
-  "diagnostics": [
-    {
-      "message": "Function is missing a return type annotation",
-      "severity": "Error",
-      "range": {
-        "start": {"line": 35, "character": 4},
-        "end": {"line": 36, "character": 26}
-      },
-      "source": "Mypy"
-    }
-  ]
-}]
-```
-
-**Best For:** Temporal files with complex dependencies, exact line/character positions, both MyPy AND Pylance issues
-
-**Note:** Pylance diagnostics are provided by pyright under the hood. The VS Code Diagnostics API can return issues from both MyPy (configured via settings) and Pylance/pyright, making it comprehensive for catching all type annotation problems.
-
-### Systematic Fixing Workflow
-
-#### **Phase 1: Critical Infrastructure Files**
-Target: Core application files, temporal modules, configuration
-
-**Workflow per file:**
-```bash
-# 1. Identify issues
-mcp__ide__getDiagnostics --uri file:///path/to/schedule_manager.py
-
-# 2. Fix issues (use MultiEdit for batch operations)
-# MultiEdit with multiple return type annotations
-
-# 3. Verify fix immediately  
-mcp__ide__getDiagnostics --uri file:///path/to/schedule_manager.py
-# Should show empty diagnostics array: []
-
-# 4. Move to next file when clean
-```
-
-**Example Fixes:**
-```python
-# Missing return type annotations
-def __init__(self):              →  def __init__(self) -> None:
-async def connect(self):         →  async def connect(self) -> None:
-async def main():               →  async def main() -> None:
-
-# Temporal API attribute access issues (use type ignores)
-action.scheduled_time           →  action.scheduled_time  # type: ignore
-
-# Unused parameters (prefix with underscore)
-def updater(input: Type):       →  def updater(_input: Type):
-```
-
-#### **Phase 2: Test Infrastructure** 
-Target: `conftest.py` fixtures, base test classes
-
-**Workflow:**
-```bash
-# 1. Check with both tools
-uv run mypy tests/conftest.py --show-error-codes
-mcp__ide__getDiagnostics --uri file:///path/to/conftest.py
-
-# 2. Fix fixture return types systematically
-# 3. Verify with MyPy (authoritative)
-uv run mypy tests/conftest.py
-# Expected: "Success: no issues found in 1 source file"
-```
-
-**Example Fixture Fixes:**
-```python
-@pytest.fixture
-def sample_brewery():                     →  def sample_brewery() -> Brewery:
-
-@pytest.fixture  
-def sample_food_truck_event():           →  def sample_food_truck_event() -> FoodTruckEvent:
-
-@pytest.fixture
-async def aiohttp_session():             →  async def aiohttp_session() -> AsyncGenerator[aiohttp.ClientSession, None]:
-
-@pytest.fixture
-def fixtures_dir():                      →  def fixtures_dir() -> Path:
-```
-
-#### **Phase 3: Systematic Test File Processing**
-Target: ~500+ test functions needing `-> None`
-
-**Optimized Workflow:**
-```bash
-# 1. Quick scan per file
-uv run mypy tests/unit/test_specific.py --show-error-codes
-
-# 2. Batch fix with MultiEdit (10-15 functions per batch) 
-# 3. Verify fix immediately
-uv run mypy tests/unit/test_specific.py
-# Expected: "Success: no issues found in 1 source file"
-
-# 4. Move to next file when clean
-```
-
-**Example Test Function Fixes:**
-```python
-def test_brewery_creation(self):         →  def test_brewery_creation(self) -> None:
-def test_food_truck_event(self):         →  def test_food_truck_event(self) -> None:
-async def test_vision_analysis(self, mock_client):  →  async def test_vision_analysis(self, mock_client: Mock) -> None:
-
-# Parameter type annotations for better clarity
-def test_parser(self, vision_analyzer):  →  def test_parser(self, vision_analyzer: VisionAnalyzer) -> None:
-```
-
-### Advanced Patterns
-
-#### **Temporal Files with API Issues**
-```python
-# Temporal SDK attributes may not be recognized by static analysis
-# Use type ignores for legitimate API usage:
-if hasattr(action, 'scheduled_time') and action.scheduled_time:  # type: ignore
-    action_info["scheduled_time"] = action.scheduled_time.isoformat()  # type: ignore
-```
-
-#### **Test Files with Intentional Type Violations**
-```python
-# When tests intentionally pass wrong types (e.g., testing error handling)
-assert not vision_analyzer._is_valid_image_url(None)  # type: ignore
-```
-
-#### **Complex Generic Types**
-```python
-# Fixture return types with generics
-@pytest.fixture
-async def aiohttp_session() -> AsyncGenerator[aiohttp.ClientSession, None]:
-    async with aiohttp.ClientSession() as session:
-        yield session
-```
-
-### Success Verification Examples
-
-#### **MyPy Success:**
-```bash
-$ uv run mypy tests/unit/test_registry.py --show-error-codes
-Success: no issues found in 1 source file
-```
-
-#### **VS Code Diagnostics Success (MyPy + Pylance/pyright):**
-```json
-[{
-  "uri": "file:///Users/.../temporal/worker.py", 
-  "diagnostics": []
-}]
-```
-
-### Batch Operation Examples
-
-#### **MultiEdit for Test Functions:**
-```python
-# Single operation to fix multiple similar issues:
-MultiEdit([
-  {"old_string": "def test_creation(self):", "new_string": "def test_creation(self) -> None:"},
-  {"old_string": "def test_equality(self):", "new_string": "def test_equality(self) -> None:"},
-  {"old_string": "def test_validation(self):", "new_string": "def test_validation(self) -> None:"}
-])
-```
-
-### Tool Selection Guidelines
-
-- **MyPy**: Use for non-temporal files, test files, utilities
-- **VS Code API (MyPy + Pylance/pyright)**: Use for temporal files, complex dependency chains, comprehensive error detection
-- **Both**: Use for verification and comprehensive coverage
-
-### Progress Tracking
-
-Keep systematic records of completed files:
-```
-✅ Phase 1 Complete: temporal/schedule_manager.py, temporal/worker.py, temporal/starter.py  
-✅ Phase 2 Complete: tests/conftest.py (12 fixtures)
-🔄 Phase 3 In Progress: tests/unit/test_registry.py (8/8), tests/unit/test_vision_analyzer.py (11/11)
-```
-
-This approach provides **surgical precision** with **immediate verification**, making type annotation fixing systematic, efficient, and reliable.
+See [./TYPE-ANNOTATIONS.md] for the comprehensive type annotation maintenance guide.
 
 ## Troubleshooting Common Issues
 

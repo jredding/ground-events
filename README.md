@@ -1,15 +1,25 @@
 # Around the Grounds 🍺🚚
 
-A Python CLI tool for tracking food truck schedules across multiple breweries. Scrapes brewery websites asynchronously and generates a unified 7-day schedule.
+A Python CLI tool for tracking food truck schedules across multiple breweries. Scrapes brewery websites asynchronously and generates a unified 7-day schedule with AI-powered enhancements.
+
+## Features
+
+- 🔄 **Async Web Scraping**: Concurrent processing of multiple brewery websites
+- 🖼️ **AI Vision Analysis**: Extracts vendor names from food truck images using Claude Vision API
+- 🎋 **AI Haiku Generation**: Creates contextual, seasonal haikus about daily food truck scenes
+- 🌐 **Auto-Deployment**: Git-based deployment to static site platforms (Vercel, Netlify, etc.)
+- ⏰ **Temporal Workflows**: Reliable scheduling with cloud or local execution
+- 🧪 **Comprehensive Testing**: 196 tests covering unit, integration, and error scenarios
 
 ## How It Works
 
 This repository contains the **scraping and scheduling engine**. When run with `--deploy`, it:
 
 1. **Scrapes** brewery websites for food truck schedules
-2. **Copies** web templates from `public_template/` to target repository
-3. **Generates** static site data (`data.json`) in target repository
-4. **Target repo** is automatically deployed by platforms like Vercel
+2. **Generates AI content**: Creates daily haikus and extracts vendor names from images (when `ANTHROPIC_API_KEY` is set)
+3. **Copies** web templates from `public_template/` to target repository
+4. **Generates** static site data (`data.json`) in target repository
+5. **Target repo** is automatically deployed by platforms like Vercel
 
 **Two-Repository Architecture:**
 - **Source repo** (this one): Contains scraping code, runs workers, web templates
@@ -37,11 +47,16 @@ uv run around-the-grounds --preview    # Generate local preview files
 ==================================================
 Found 23 food truck events:
 
+🎋 Today's Haiku:
+🍂 Autumn mist rolls in—
+Plaza Garcia's warmth glows
+at Obec's wood door 🍺
+
 📅 Saturday, July 05, 2025
   🚚 Woodshop BBQ @ Stoup Brewing - Ballard 01:00 PM - 08:00 PM
   🚚 Kaosamai Thai @ Obec Brewing 04:00 PM - 08:00 PM
 
-📅 Sunday, July 06, 2025  
+📅 Sunday, July 06, 2025
   🚚 Burger Planet @ Stoup Brewing - Ballard 01:00 PM - 07:00 PM
   🚚 TOLU 🖼️🤖 @ Urban Family Brewing 01:00 PM - 07:00 PM
 ```
@@ -207,8 +222,8 @@ docker logs -f around-the-grounds-worker
 
 ### Environment Variables
 ```bash
-# Optional: AI vision analysis for vendor name extraction
-ANTHROPIC_API_KEY=your-anthropic-api-key
+# Optional: AI features (vision analysis + haiku generation)
+ANTHROPIC_API_KEY=your-anthropic-api-key  # Enables vendor name extraction from images and daily haiku generation
 
 # Required for web deployment
 GITHUB_APP_ID=123456
@@ -282,7 +297,8 @@ See [CLAUDE.md](CLAUDE.md) for detailed development documentation.
 - **CLI Tool**: `around_the_grounds/main.py` - Entry point
 - **Parsers**: Extensible system for different brewery websites
 - **Scrapers**: Async coordinator with error handling and retries
-- **Temporal**: Workflow orchestration for reliable scheduling  
+- **AI Utils**: Vision analyzer for vendor identification, haiku generator for daily scenes
+- **Temporal**: Workflow orchestration for reliable scheduling
 - **Web Interface**: Template files in `public_template/` (copied to target repo)
 - **Tests**: 196 tests covering unit, integration, and error scenarios
 

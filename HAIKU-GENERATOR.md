@@ -79,7 +79,7 @@ The template uses Python `{format}` placeholders. The following fields are avail
 | `{date}` | Human-friendly date string (`March 15, 2025 (Saturday)`) |
 | `{truck_name}` | Food truck selected for featured focus |
 | `{brewery_name}` | Brewery hosting the featured truck |
-| `{events_summary}` | Bullet list of all trucks scheduled for the day |
+| `{events_summary}` | Bullet list with the single randomly highlighted truck/brewery |
 
 If the custom template is missing a placeholder, the generator falls back to the built-in default to avoid runtime failures. Keep the emoji formatting rules or adjust them to match your brand voice.
 

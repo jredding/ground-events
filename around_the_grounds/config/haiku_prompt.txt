@@ -2,7 +2,7 @@ Today's date is: {date}
 
 Today's featured food truck: {truck_name} at {brewery_name}
 
-Today's full lineup:
+Today's haiku inspiration:
 {events_summary}
 
 ---

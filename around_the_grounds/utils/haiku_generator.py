@@ -21,7 +21,7 @@ DEFAULT_PROMPT_TEMPLATE = """Today's date is: {date}
 
 Today's featured food truck: {truck_name} at {brewery_name}
 
-Today's full lineup:
+Today's haiku inspiration:
 {events_summary}
 
 ---
@@ -143,7 +143,7 @@ class HaikuGenerator:
                 date_str=date_str,
                 truck_name=truck_name,
                 brewery_name=brewery_name,
-                events=events,
+                events=[selected_event],
             )
 
             message = self.client.messages.create(

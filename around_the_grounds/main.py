@@ -128,9 +128,10 @@ async def _generate_haiku_for_today(events: List[FoodTruckEvent]) -> Optional[st
     """Generate a haiku for today's food truck events."""
     try:
         # Get today's date in Pacific timezone
-        from datetime import date
+        from .utils.timezone_utils import now_in_pacific_naive
 
-        today = date.today()
+        today_pacific = now_in_pacific_naive()
+        today = today_pacific.date()
 
         # Filter events to only today's date
         today_events = [event for event in events if event.date.date() == today]
@@ -142,7 +143,7 @@ async def _generate_haiku_for_today(events: List[FoodTruckEvent]) -> Optional[st
         # Initialize haiku generator and generate haiku
         haiku_generator = HaikuGenerator()
         haiku = await haiku_generator.generate_haiku(
-            datetime.now(), today_events, max_retries=2
+            today_pacific, today_events, max_retries=2
         )
 
         return haiku

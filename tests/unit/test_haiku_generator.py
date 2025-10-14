@@ -164,10 +164,14 @@ class TestHaikuGenerator:
 
     @pytest.mark.asyncio
     @patch("around_the_grounds.utils.haiku_generator.anthropic.Anthropic")
+    @patch("around_the_grounds.utils.haiku_generator.random.choice")
     async def test_generate_haiku_includes_truck_and_brewery(
-        self, mock_anthropic_client: Mock, haiku_generator: HaikuGenerator, sample_events: list
+        self, mock_random_choice: Mock, mock_anthropic_client: Mock, haiku_generator: HaikuGenerator, sample_events: list
     ) -> None:
         """Test that haiku generation prompt includes truck names and breweries."""
+        # Mock random.choice to always select first event for deterministic testing
+        mock_random_choice.return_value = sample_events[0]
+
         # Mock the API response
         mock_message = Mock()
         mock_content = Mock()
@@ -183,12 +187,11 @@ class TestHaikuGenerator:
         today = datetime(2025, 10, 13)
         await haiku_generator.generate_haiku(today, sample_events)
 
-        # Verify the prompt included truck names and breweries
+        # Verify the prompt included the selected truck and brewery
         call_args = mock_create.call_args
         prompt = call_args.kwargs["messages"][0]["content"]
 
+        # Since we mocked random.choice to return first event, verify that truck appears
         assert "Georgia's Greek" in prompt
         assert "Stoup Brewing" in prompt
-        assert "MomoExpress" in prompt
-        assert "Urban Family Brewing" in prompt
         assert "October 13, 2025" in prompt

@@ -37,7 +37,7 @@ uv run around-the-grounds --verbose    # Run with AI features enabled (~60-90s)
 uv run around-the-grounds --deploy     # Run with AI features and deploy to web (~90-60s)
 ```
 
-**⏱️ Execution Times:** CLI operations typically take 60-90 seconds to scrape all brewery websites concurrently. Add extra time for vision analysis and git operations when using `--deploy`.
+**⏱️ Execution Times:** CLI operations typically take 60-90 seconds to scrape all brewery websites concurrently. Add extra time for AI features (vision analysis, haiku generation) and git operations when using `--deploy`.
 
 ### Local Preview & Testing
 
@@ -137,7 +137,9 @@ uv run python -m pytest tests/unit/        # Unit tests only
 uv run python -m pytest tests/parsers/     # Parser-specific tests
 uv run python -m pytest tests/integration/ # Integration tests
 uv run python -m pytest tests/unit/test_vision_analyzer.py  # Vision analysis tests
+uv run python -m pytest tests/unit/test_haiku_generator.py  # Haiku generation tests
 uv run python -m pytest tests/integration/test_vision_integration.py  # Vision integration tests
+uv run python -m pytest tests/integration/test_haiku_integration.py   # Haiku integration tests
 uv run python -m pytest tests/test_error_handling.py  # Error handling tests
 
 # Test options
@@ -145,6 +147,7 @@ uv run python -m pytest -v                 # Verbose output
 uv run python -m pytest --cov=around_the_grounds --cov-report=html  # Coverage
 uv run python -m pytest -k "test_error"    # Run error-related tests
 uv run python -m pytest -k "vision"        # Run vision-related tests
+uv run python -m pytest -k "haiku"         # Run haiku-related tests
 uv run python -m pytest -x                 # Stop on first failure
 ```
 
@@ -293,7 +296,7 @@ See [./ERROR-HANDLING.md] for the complete error handling strategy guide.
 
 ## Testing Strategy
 
-The project includes a comprehensive test suite with 196 tests covering unit, integration, vision analysis, and error scenarios.
+The project includes a comprehensive test suite with 196 tests covering unit, integration, vision analysis, haiku generation, and error scenarios.
 
 See [./TESTING.md] for the complete testing strategy and guide.
 

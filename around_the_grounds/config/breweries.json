@@ -73,6 +73,20 @@
         "location_id": 164,
         "date_format": "M-D-YY"
       }
+    },
+    {
+      "key": "roulette",
+      "name": "Roulette",
+      "url": "https://roulette.org/calendar/",
+      "parser_config": {
+        "note": "Experimental music venue in Brooklyn with event calendar",
+        "selectors": {
+          "event_container": "div.event",
+          "event_title": "h2.event-title a",
+          "event_time": "div.event-time",
+          "event_desc": "div.event-desc"
+        }
+      }
     }
   ]
 }

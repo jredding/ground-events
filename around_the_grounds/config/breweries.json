@@ -13,6 +13,15 @@
           "event_desc": "div.event-desc"
         }
       }
+    },
+    {
+      "key": "littlefield",
+      "name": "Littlefield",
+      "url": "https://littlefieldnyc.com/all-shows/",
+      "parser_config": {
+        "note": "Brooklyn venue using Eventbrite - parses event IDs from embedded widgets",
+        "parser_type": "eventbrite_embedded"
+      }
     }
   ]
 }

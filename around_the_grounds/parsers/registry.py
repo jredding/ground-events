@@ -3,6 +3,7 @@ from typing import Dict, Type
 from .bale_breaker import BaleBreakerParser
 from .base import BaseParser
 from .chucks_greenwood import ChucksGreenwoodParser
+from .littlefield import LittlefieldParser
 from .obec_brewing import ObecBrewingParser
 from .roulette import RouletteParser
 from .salehs_corner import SalehsCornerParser
@@ -21,6 +22,7 @@ class ParserRegistry:
         "chucks-greenwood": ChucksGreenwoodParser,
         "salehs-corner": SalehsCornerParser,
         "roulette": RouletteParser,
+        "littlefield": LittlefieldParser,
     }
 
     @classmethod

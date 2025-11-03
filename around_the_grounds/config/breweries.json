@@ -31,6 +31,16 @@
         "note": "Brooklyn venue using Spacecrafted CMS with Eventbrite integration",
         "parser_type": "spacecrafted_eventbrite"
       }
+    },
+    {
+      "key": "bell-house",
+      "name": "The Bell House",
+      "url": "https://www.thebellhouseny.com/shows/calendar/2025-11",
+      "parser_config": {
+        "note": "Brooklyn venue using LiveNation platform - parses from monthly calendar view",
+        "parser_type": "livenation_calendar",
+        "calendar_url_pattern": "https://www.thebellhouseny.com/shows/calendar/{year}-{month:02d}"
+      }
     }
   ]
 }

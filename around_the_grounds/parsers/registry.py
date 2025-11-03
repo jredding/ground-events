@@ -2,6 +2,7 @@ from typing import Dict, Type
 
 from .bale_breaker import BaleBreakerParser
 from .base import BaseParser
+from .bell_house import BellHouseParser
 from .chucks_greenwood import ChucksGreenwoodParser
 from .littlefield import LittlefieldParser
 from .obec_brewing import ObecBrewingParser
@@ -25,6 +26,7 @@ class ParserRegistry:
         "roulette": RouletteParser,
         "littlefield": LittlefieldParser,
         "union-hall": UnionHallParser,
+        "bell-house": BellHouseParser,
     }
 
     @classmethod

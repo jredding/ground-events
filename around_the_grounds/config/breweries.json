@@ -22,6 +22,15 @@
         "note": "Brooklyn venue using Eventbrite - parses event IDs from embedded widgets",
         "parser_type": "eventbrite_embedded"
       }
+    },
+    {
+      "key": "union-hall",
+      "name": "Union Hall",
+      "url": "https://unionhallny.com/calendar",
+      "parser_config": {
+        "note": "Brooklyn venue using Spacecrafted CMS with Eventbrite integration",
+        "parser_type": "spacecrafted_eventbrite"
+      }
     }
   ]
 }

@@ -8,6 +8,7 @@ from .obec_brewing import ObecBrewingParser
 from .roulette import RouletteParser
 from .salehs_corner import SalehsCornerParser
 from .stoup_ballard import StoupBallardParser
+from .union_hall import UnionHallParser
 from .urban_family import UrbanFamilyParser
 from .wheelie_pop import WheeliePopParser
 
@@ -23,6 +24,7 @@ class ParserRegistry:
         "salehs-corner": SalehsCornerParser,
         "roulette": RouletteParser,
         "littlefield": LittlefieldParser,
+        "union-hall": UnionHallParser,
     }
 
     @classmethod
